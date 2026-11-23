@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: brain-games-api
+    rootDir: server
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: leaderboard
+      mountPath: /var/data
+      sizeGB: 1
