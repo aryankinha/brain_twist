@@ -1,7 +1,6 @@
-const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+const baseUrl = (process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://brain-twist.onrender.com').replace(/\/+$/, '');
 
 async function request(path, options, signal) {
-  if (!baseUrl) throw new Error('API URL is missing');
   const controller = new AbortController();
   const abort = () => controller.abort();
   const timeout = setTimeout(abort, 30_000);
