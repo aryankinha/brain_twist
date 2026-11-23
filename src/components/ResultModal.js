@@ -8,6 +8,7 @@ import { formatScore, higherScoreWins, scoreUnit } from '../format';
 import { saveBest } from '../storage';
 import { colors, space, type } from '../theme';
 import { useUser } from '../user-context';
+import ArcadeArt from './ArcadeArt';
 import Reveal from './Reveal';
 import Button from './Button';
 
@@ -60,12 +61,15 @@ export default function ResultModal({ game, value, children = null, title = null
     <Modal visible transparent onRequestClose={onBack}>
       <SafeAreaView style={styles.overlay}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.center}>
-        <Reveal style={styles.card}>
+        <Reveal celebratory style={styles.card}>
           <Text accessibilityRole="header" style={styles.title}>{title ?? (newBest ? (record.previous == null ? 'First record' : 'New personal best') : 'Round complete')}</Text>
           <View style={[styles.score, newBest && styles.record]}>
-            <Text style={styles.value}>{formatScore(game, value)}</Text>
-            <Text style={styles.label}>{unit === 'time' ? 'FINISH TIME' : unit.toUpperCase()}</Text>
-            {title && newBest && <Text style={styles.label}>✓ {record.previous == null ? 'First record' : 'New personal best'}</Text>}
+            <View style={styles.scoreCopy}>
+              <Text style={styles.label}>{unit === 'time' ? 'FINISH TIME' : unit.toUpperCase()}</Text>
+              <Text adjustsFontSizeToFit numberOfLines={1} style={styles.value}>{formatScore(game, value)}</Text>
+              {title && newBest && <Text style={styles.label}>✓ {record.previous == null ? 'First record' : 'New personal best'}</Text>}
+            </View>
+            <ArcadeArt game={game.split('-')[0]} size={64} />
           </View>
           <Text style={styles.text}>Personal best  {formatScore(game, record?.best)}</Text>
           {difference !== null && difference !== 0 && (
@@ -106,10 +110,11 @@ const styles = StyleSheet.create({
   center: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: space.page },
   card: { width: '100%', maxWidth: space.maxBoard, backgroundColor: colors.paper, borderRadius: space.card, padding: space.lg, gap: space.md },
   title: { ...type.heading, color: colors.text },
-  score: { backgroundColor: colors.tint, borderRadius: space.radius, padding: space.page },
-  value: { ...type.display, fontVariant: ['tabular-nums'], color: colors.text },
-  record: { backgroundColor: colors.lime },
-  label: { ...type.label, color: colors.text },
+  score: { backgroundColor: colors.arcade, borderRadius: space.radius, padding: space.page, flexDirection: 'row', alignItems: 'center', gap: space.md },
+  scoreCopy: { flex: 1, gap: space.xs },
+  value: { ...type.display, fontVariant: ['tabular-nums'], color: colors.paper },
+  record: { backgroundColor: colors.arcadeShade },
+  label: { ...type.label, color: colors.arcadeWhite },
   daily: { color: colors.limeInk, backgroundColor: colors.lime, padding: space.sm, fontWeight: '800' },
   text: { color: colors.text },
   status: { color: colors.muted },

@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   related: { backgroundColor: colors.violet },
   matching: { backgroundColor: colors.selected },
   wrongCell: { backgroundColor: colors.errorFill },
-  focused: { backgroundColor: colors.selected, borderWidth: space.line, borderColor: colors.accent },
+  focused: { backgroundColor: colors.arcadeViolet, borderWidth: space.line, borderColor: colors.violetInk },
   focusedWrong: { borderColor: colors.error, backgroundColor: colors.errorFill },
   errorMark: { position: 'absolute', right: 2, top: 0, color: colors.error, fontSize: 11 },
   digit: { color: colors.accent, fontSize: 20 },

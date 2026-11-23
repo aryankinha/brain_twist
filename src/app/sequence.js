@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import ResultModal from '../components/ResultModal';
 import Reveal from '../components/Reveal';
 import { useFeedback } from '../feedback';
 import { flashDuration, initialSequence, nextTile, sequenceReducer } from '../games/sequence';
+import { useGamePulse } from '../use-game-pulse';
 import { colors, motion, space, type } from '../theme';
 
 const pads = [
@@ -19,6 +20,7 @@ const pads = [
 export default function SequenceScreen() {
   const [round, dispatch] = useReducer(sequenceReducer, initialSequence);
   const [foreground, setForeground] = useState(true);
+  const { bump, pulse } = useGamePulse();
   const { play, animate } = useFeedback();
   const { phase, score, pattern, step, cue, miss } = round;
 
@@ -43,6 +45,8 @@ export default function SequenceScreen() {
       return () => clearTimeout(timeout);
     }
   }, [cue, foreground, pattern, phase, score, step]);
+
+  useEffect(() => { if (cue !== null || phase === 'clear') bump(0.82); }, [bump, cue, phase]);
 
   function begin() {
     const first = nextTile(null);
@@ -83,7 +87,7 @@ export default function SequenceScreen() {
             <View style={styles.hud}>
               <View><Text style={styles.label}>Cleared</Text><Text style={styles.metric}>{score}</Text></View>
               <View><Text style={styles.label}>Pattern</Text><Text style={styles.metric}>{pattern.length}</Text></View>
-              <View style={styles.phase}><Text accessibilityLiveRegion="polite" style={styles.phaseText}>{prompt}</Text></View>
+              <Animated.View style={[styles.phase, phase === 'clear' && styles.clear, { transform: [{ scale: pulse }] }]}><Text accessibilityLiveRegion="polite" style={styles.phaseText}>{prompt}</Text></Animated.View>
             </View>
             <View style={styles.progress} accessible accessibilityLabel={`${progress} of ${pattern.length} shapes repeated`}>
               <View style={[styles.fill, { width: `${progress / pattern.length * 100}%` }]} />
@@ -123,7 +127,7 @@ export default function SequenceScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  page: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: space.page },
+  page: { flexGrow: 1, justifyContent: 'flex-start', alignItems: 'center', padding: space.page },
   playfield: { width: '100%', maxWidth: space.maxBoard, gap: space.page },
   demo: { flexDirection: 'row', gap: space.xs },
   demoTile: { width: 48, height: 48, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center' },
@@ -134,6 +138,7 @@ const styles = StyleSheet.create({
   label: { ...type.label, color: colors.muted },
   metric: { ...type.number, fontSize: 27, color: colors.text },
   phase: { flex: 1, borderRadius: space.radius, padding: space.sm, backgroundColor: colors.violet, alignItems: 'center' },
+  clear: { backgroundColor: colors.arcadeLime },
   phaseText: { color: colors.violetInk, fontWeight: '800', textAlign: 'center' },
   progress: { height: 5, backgroundColor: colors.surface, borderRadius: 3, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.violetInk },

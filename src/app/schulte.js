@@ -120,11 +120,11 @@ export default function SchulteScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  page: { flexGrow: 1, padding: space.page, alignItems: 'center', justifyContent: 'center' },
+  page: { flexGrow: 1, padding: space.page, alignItems: 'center', justifyContent: 'flex-start' },
   content: { width: '100%', maxWidth: space.maxBoard, gap: space.page },
   intro: { backgroundColor: colors.lime, padding: space.lg, borderRadius: space.card },
   instructions: { color: colors.limeInk, fontSize: 16, lineHeight: 23 },
-  stats: { backgroundColor: colors.lime, padding: space.page, borderRadius: space.radius, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stats: { backgroundColor: colors.arcadeLime, padding: space.page, borderRadius: space.radius, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   hero: { ...type.display, color: colors.limeInk },
   label: { ...type.label, color: colors.limeInk },
   target: { ...type.display, lineHeight: 54, color: colors.limeInk },

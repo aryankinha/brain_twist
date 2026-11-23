@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import Reveal from '../components/Reveal';
 import Pause from '../components/Pause';
 import { useFeedback } from '../feedback';
+import { useGamePulse } from '../use-game-pulse';
 import { usePause } from '../use-pause';
 import ResultModal from '../components/ResultModal';
 import { colors, motion, space, stroopColors, stroopInk, type } from '../theme';
@@ -30,7 +31,7 @@ export default function StroopScreen() {
   const [result, setResult] = useState(null);
   const [stats, setStats] = useState({ correct: 0, wrong: 0, streak: 0, longest: 0, feedback: null });
   const [lastChoice, setLastChoice] = useState(null);
-  const [pulse] = useState(() => new Animated.Value(1));
+  const { pulse, bump } = useGamePulse();
   const { play, animate } = useFeedback();
   const { pausedAt, pause, resume } = usePause(start);
   const running = Boolean(trial) && !result;
@@ -57,11 +58,6 @@ export default function StroopScreen() {
       clearTimeout(deadline);
     };
   }, [finish, pausedAt, running]);
-
-  useEffect(() => {
-    if (!animate) pulse.setValue(1);
-    return () => pulse.stopAnimation();
-  }, [animate, pulse]);
 
   function resumeRound() {
     const duration = resume();
@@ -102,14 +98,11 @@ export default function StroopScreen() {
         feedback: correct ? 'Correct' : 'Miss',
       };
     });
-    if (animate) {
-      pulse.setValue(0.94);
-      Animated.timing(pulse, { toValue: 1, duration: motion.release, useNativeDriver: true }).start();
-    }
+    bump(correct ? 0.88 : 0.96);
     const pair = nextTrial(active.pair);
     current.current = { pair, at: Date.now() };
     setTrial(pair);
-  }, [animate, finish, pausedAt, play, pulse, trial]);
+  }, [bump, finish, pausedAt, play, trial]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
@@ -184,7 +177,7 @@ const styles = StyleSheet.create({
   instruction: { color: colors.peachInk, fontSize: 16, lineHeight: 23 },
   track: { backgroundColor: colors.tint, height: space.sm, borderRadius: space.sm, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.accent, borderRadius: space.sm },
-  prompt: { flexGrow: 1, minHeight: 170, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: space.hairline, borderColor: colors.border, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
+  prompt: { flexGrow: 1, minHeight: 170, maxHeight: 400, justifyContent: 'center', backgroundColor: colors.arcadeWhite, borderWidth: space.hairline, borderColor: colors.arcadeViolet, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
   promptLabel: { color: colors.muted, textAlign: 'center', fontWeight: '700' },
   warning: { color: colors.error },
   urgent: { backgroundColor: colors.error },
