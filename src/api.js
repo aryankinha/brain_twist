@@ -20,7 +20,7 @@ async function request(path, options, signal) {
 export const ping = () => request('/health');
 
 export function submitScore(score) {
-  return request('/scores', {
+  return request('/scores?rankings=1', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(score),

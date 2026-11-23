@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { submitScore } from '../api';
 import { useFeedback } from '../feedback';
 import { dayKey } from '../progress';
-import { formatScore, higherScoreWins, scoreUnit } from '../format';
+import { formatScore, gameLabels, higherScoreWins, scoreUnit } from '../format';
 import { saveBest } from '../storage';
 import { colors, space, type } from '../theme';
 import { useUser } from '../user-context';
@@ -16,6 +16,7 @@ export default function ResultModal({ game, value, children = null, title = null
   const { profile } = useUser();
   const { userId, name } = profile;
   const [attempt, setAttempt] = useState(0);
+  const [ranks, setRanks] = useState(null);
   const [record, setRecord] = useState(null);
   const [day] = useState(dayKey);
   const savedRound = useRef(null);
@@ -36,8 +37,11 @@ export default function ResultModal({ game, value, children = null, title = null
         const next = await savedRound.current;
         localSaved = true;
         if (active) setRecord(next);
-        await submitScore({ userId, name, game, value });
-        if (active) setStatus('saved');
+        const ranking = await submitScore({ userId, name, game, value });
+        if (active) {
+          if (ranking.levelRank != null) setRanks(ranking);
+          setStatus('saved');
+        }
       } catch {
         if (active) setStatus(localSaved ? 'submit-error' : 'local-error');
       }
@@ -71,6 +75,12 @@ export default function ResultModal({ game, value, children = null, title = null
             </View>
             <ArcadeArt game={game.split('-')[0]} size={64} />
           </View>
+          {ranks && (
+            <Reveal celebratory style={styles.rankRow}>
+              <View style={styles.rankCard}><Text style={styles.rankLabel}>{gameLabels[game]}</Text><Text style={styles.rankValue}>#{ranks.levelRank}</Text><Text style={styles.status}>{ranks.levelPoints} contribution</Text></View>
+              <View style={styles.rankCard}><Text style={styles.rankLabel}>Overall</Text><Text style={styles.rankValue}>#{ranks.overallRank}</Text><Text style={styles.status}>{ranks.overallPoints} total</Text></View>
+            </Reveal>
+          )}
           <Text style={styles.text}>Personal best  {formatScore(game, record?.best)}</Text>
           {difference !== null && difference !== 0 && (
             <Text style={styles.status}>
@@ -117,6 +127,10 @@ const styles = StyleSheet.create({
   label: { ...type.label, color: colors.arcadeWhite },
   daily: { color: colors.limeInk, backgroundColor: colors.lime, padding: space.sm, fontWeight: '800' },
   text: { color: colors.text },
+  rankRow: { flexDirection: 'row', gap: space.sm },
+  rankCard: { flex: 1, backgroundColor: colors.violet, borderRadius: space.radius, padding: space.sm, gap: space.xs },
+  rankLabel: { color: colors.violetInk, fontSize: 12, fontWeight: '800' },
+  rankValue: { ...type.number, color: colors.arcade, fontSize: 24 },
   status: { color: colors.muted },
   actions: { flexDirection: 'row', gap: space.sm },
   action: { flex: 1 },
