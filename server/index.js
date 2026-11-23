@@ -9,6 +9,7 @@ const games = {
   'lights-medium': { order: 'asc', min: 1, max: 100000 },
   'lights-hard': { order: 'asc', min: 1, max: 100000 },
   schulte: { order: 'asc', min: 1000, max: 600000 },
+  sequence: { order: 'desc', min: 0, max: 100000 },
   stroop: { order: 'desc', min: 0, max: 200 },
 };
 const validUserId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(id);

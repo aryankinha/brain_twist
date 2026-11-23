@@ -1,3 +1,4 @@
+import { higherScoreWins } from './format';
 import { dailyGame, dailyStreak, dayKey } from './progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -23,7 +24,7 @@ export async function getBest(game) {
 export function saveBest(game, value, day) {
   const pending = writes.then(async () => {
     const previous = await readBest(game);
-    const chooseBest = game === 'stroop' ? Math.max : Math.min;
+    const chooseBest = higherScoreWins(game) ? Math.max : Math.min;
     const best = previous == null ? value : chooseBest(previous, value);
     /** @type {[string, string][]} */
     const updates = [];

@@ -30,6 +30,7 @@ function GameStack() {
       <Stack.Screen name="schulte" options={{ title: 'Schulte' }} />
       <Stack.Screen name="stroop" options={{ title: 'Stroop' }} />
       <Stack.Screen name="lights" options={{ title: 'Lights Out' }} />
+      <Stack.Screen name="sequence" options={{ title: 'Sequence Memory' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
     </Stack>
   );

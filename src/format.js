@@ -7,6 +7,7 @@ export const gameLabels = {
   'lights-hard': 'Lights Out Hard',
   schulte: 'Schulte',
   stroop: 'Stroop',
+  sequence: 'Sequence Memory',
 };
 
 export function formatTime(ms, tenths = false) {
@@ -17,7 +18,12 @@ export function formatTime(ms, tenths = false) {
 
 export function scoreUnit(game) {
   if (game === 'stroop') return 'points';
+  if (game === 'sequence') return 'rounds';
   return game.startsWith('lights-') ? 'moves' : 'time';
+}
+
+export function higherScoreWins(game) {
+  return game === 'stroop' || game === 'sequence';
 }
 
 export function formatScore(game, value) {

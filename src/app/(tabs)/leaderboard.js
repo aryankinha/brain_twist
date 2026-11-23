@@ -64,7 +64,7 @@ export default function LeaderboardScreen() {
       </View>
       <View style={styles.boardHeader}>
         <Text style={styles.boardTitle}>{gameLabels[game]}</Text>
-        <Text style={styles.boardHint}>{{ points: 'Highest score wins', moves: 'Fewest moves wins', time: 'Fastest time wins' }[scoreUnit(game)]}</Text>
+        <Text style={styles.boardHint}>{{ points: 'Highest score wins', rounds: 'Most rounds wins', moves: 'Fewest moves wins', time: 'Fastest time wins' }[scoreUnit(game)]}</Text>
       </View>
       {status === 'loading' && !refreshing && <ActivityIndicator style={styles.padded} color={colors.accent} />}
       {status === 'error' && (

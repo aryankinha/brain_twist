@@ -4,14 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { submitScore } from '../api';
 import { useFeedback } from '../feedback';
 import { dayKey } from '../progress';
-import { formatScore, scoreUnit } from '../format';
+import { formatScore, higherScoreWins, scoreUnit } from '../format';
 import { saveBest } from '../storage';
 import { colors, space, type } from '../theme';
 import { useUser } from '../user-context';
 import Reveal from './Reveal';
 import Button from './Button';
 
-export default function ResultModal({ game, value, children = null, onAgain, onBack }) {
+export default function ResultModal({ game, value, children = null, title = 'Round complete', onAgain, onBack }) {
   const { profile } = useUser();
   const { userId, name } = profile;
   const [attempt, setAttempt] = useState(0);
@@ -52,7 +52,7 @@ export default function ResultModal({ game, value, children = null, onAgain, onB
     play(newBest || record.dailyCompleted ? 'record' : 'correct');
   }, [newBest, play, record]);
   const unit = scoreUnit(game);
-  const difference = record?.previous == null ? null : unit === 'points'
+  const difference = record?.previous == null ? null : higherScoreWins(game)
     ? value - record.previous
     : record.previous - value;
 
@@ -61,7 +61,7 @@ export default function ResultModal({ game, value, children = null, onAgain, onB
       <SafeAreaView style={styles.overlay}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.center}>
         <Reveal style={styles.card}>
-          <Text accessibilityRole="header" style={styles.title}>{newBest ? (record.previous == null ? 'First record' : 'New personal best') : 'Round complete'}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{newBest ? (record.previous == null ? 'First record' : 'New personal best') : title}</Text>
           <View style={[styles.score, newBest && styles.record]}>
             <Text style={styles.value}>{formatScore(game, value)}</Text>
             <Text style={styles.label}>{unit === 'time' ? 'FINISH TIME' : unit.toUpperCase()}</Text>
@@ -71,8 +71,8 @@ export default function ResultModal({ game, value, children = null, onAgain, onB
             <Text style={styles.status}>
               {unit === 'moves'
                 ? `${Math.abs(difference)} ${Math.abs(difference) === 1 ? 'move' : 'moves'} ${difference > 0 ? 'fewer' : 'more'} than your previous best`
-                : unit === 'points'
-                ? `${Math.abs(difference)} ${difference > 0 ? 'above' : 'below'} your previous best`
+                : higherScoreWins(game)
+                ? `${Math.abs(difference)} ${unit} ${difference > 0 ? 'above' : 'below'} your previous best`
                 : `${(Math.abs(difference) / 1000).toFixed(1)}s ${difference > 0 ? 'faster' : 'slower'} than your previous best`}
             </Text>
           )}
