@@ -1,4 +1,4 @@
-import { dailyGame, dayKey } from './progress';
+import { dailyGame, dailyStreak, dayKey } from './progress';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export async function loadProfile() {
@@ -29,10 +29,13 @@ export function saveBest(game, value, day) {
     const updates = [];
     if (best !== previous) updates.push([`best:${game}`, JSON.stringify(best)]);
     const daily = game === dailyGame(day) && day === dayKey();
-    const dailyBefore = daily ? await loadDaily(day) : null;
+    const history = daily ? await loadDailyProgress() : null;
+    const dailyBefore = history?.day === day ? history.value : null;
     if (daily) {
       const dailyBest = dailyBefore == null ? value : chooseBest(dailyBefore, value);
-      if (dailyBest !== dailyBefore) updates.push(['daily', JSON.stringify({ day, value: dailyBest })]);
+      const previousStreak = dailyStreak(history, day);
+      const streak = history?.day === day ? previousStreak : previousStreak + 1;
+      if (dailyBest !== dailyBefore) updates.push(['daily', JSON.stringify({ day, value: dailyBest, streak })]);
     }
     if (updates.length) await AsyncStorage.multiSet(updates);
     return { best, previous, dailyCompleted: daily && dailyBefore == null };
@@ -49,7 +52,6 @@ export function savePreferences(preferences) {
   return AsyncStorage.setItem('preferences', JSON.stringify(preferences));
 }
 
-export async function loadDaily(day) {
-  const data = JSON.parse(await AsyncStorage.getItem('daily'));
-  return data?.day === day ? data.value : null;
+export async function loadDailyProgress() {
+  return JSON.parse(await AsyncStorage.getItem('daily'));
 }

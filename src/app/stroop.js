@@ -29,6 +29,7 @@ export default function StroopScreen() {
   const [remaining, setRemaining] = useState(ROUND_MS / 1000);
   const [result, setResult] = useState(null);
   const [stats, setStats] = useState({ correct: 0, wrong: 0, streak: 0, longest: 0, feedback: null });
+  const [lastChoice, setLastChoice] = useState(null);
   const [pulse] = useState(() => new Animated.Value(1));
   const { play, animate } = useFeedback();
   const { pausedAt, pause, resume } = usePause(start);
@@ -70,6 +71,7 @@ export default function StroopScreen() {
   function begin() {
     resume();
     pulse.setValue(1);
+    setLastChoice(null);
     setStats({ correct: 0, wrong: 0, streak: 0, longest: 0, feedback: null });
     const pair = nextTrial(null);
     const at = Date.now();
@@ -89,6 +91,7 @@ export default function StroopScreen() {
     const correct = color === active.pair.ink;
     answers.current.push({ correct, ms: at - active.at });
     play(correct ? 'correct' : 'wrong');
+    setLastChoice({ color, correct });
     setStats((previous) => {
       const streak = correct ? previous.streak + 1 : 0;
       return {
@@ -141,7 +144,7 @@ export default function StroopScreen() {
               {colorNames.map((color) => (
                 <Pressable key={color} accessibilityRole="button" accessibilityLabel={color}
                   onPress={() => answer(color)}
-                  style={({ pressed }) => [styles.answer, pressed && styles.pressed, pressed && animate && styles.compress]}>
+                  style={({ pressed }) => [styles.answer, lastChoice?.color === color && (lastChoice.correct ? styles.choiceCorrect : styles.choiceMiss), pressed && styles.pressed, pressed && animate && styles.compress]}>
                   <View style={[styles.swatch, { backgroundColor: stroopColors[color] }]} />
                   <Text style={styles.answerLabel}>{color}</Text>
                 </Pressable>
@@ -190,6 +193,8 @@ const styles = StyleSheet.create({
   feedbackMiss: { color: colors.peach },
   answers: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: space.sm },
   answer: { width: '48%', minHeight: 66, paddingHorizontal: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: space.line, borderColor: colors.text, borderRadius: space.radius, backgroundColor: colors.paper },
+  choiceCorrect: { borderColor: colors.accent },
+  choiceMiss: { borderColor: colors.error, backgroundColor: colors.errorFill },
   answerLabel: { color: colors.text, fontWeight: '900', flexShrink: 1 },
   swatch: { width: 15, height: 15, borderWidth: space.hairline, borderColor: colors.text },
   pressed: { backgroundColor: colors.peach },

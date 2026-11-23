@@ -2,12 +2,12 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { useFeedback } from '../feedback';
 import { colors, elevation, motion, space } from '../theme';
 
-export default function Button({ title, onPress, disabled = false, style = undefined, labelStyle = undefined, selected = undefined, primary = false }) {
+export default function Button({ title, onPress, disabled = false, style = undefined, labelStyle = undefined, detail = null, selected = undefined, primary = false }) {
   const animate = useFeedback()?.animate;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={detail == null ? title : `${title}, ${detail} remaining`}
       accessibilityState={{ disabled, selected }}
       disabled={disabled}
       onPress={onPress}
@@ -16,6 +16,7 @@ export default function Button({ title, onPress, disabled = false, style = undef
       ]}
     >
       <Text style={[styles.label, primary && styles.primaryLabel, labelStyle]}>{title}</Text>
+      {detail != null && <Text style={styles.detail}>{detail}</Text>}
     </Pressable>
   );
 }
@@ -37,6 +38,7 @@ const styles = StyleSheet.create({
   primaryLabel: { color: colors.paper },
   pressed: { opacity: 0.8, elevation: 0 },
   compress: { transform: [{ scale: motion.press }] },
+  detail: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
   dimmed: { opacity: 0.5 },
   label: { color: colors.text, fontWeight: '700', textAlign: 'center' },
 });

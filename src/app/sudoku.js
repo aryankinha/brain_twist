@@ -106,7 +106,11 @@ export default function SudokuScreen() {
     }
   }, [animate, given, pausedAt, play, pulse, running, selected, solution]);
   const selectedDigit = selected === null ? 0 : board[selected];
-  const filled = board.filter((digit, index) => digit === solution[index]).length;
+  const counts = Array(10).fill(0);
+  let filled = 0;
+  board.forEach((digit, index) => {
+    if (digit === solution[index]) { counts[digit] += 1; filled += 1; }
+  });
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
@@ -127,7 +131,7 @@ export default function SudokuScreen() {
         </View>
         <View style={[styles.pad, { width: cell * 9 }]}>
           {digits.map((digit) => (
-            <Button key={digit} title={String(digit)} selected={digit === selectedDigit} labelStyle={styles.keyDigit} onPress={() => enter(digit)} style={styles.key} />
+            <Button key={digit} title={String(digit)} detail={9 - counts[digit]} disabled={counts[digit] === 9} selected={digit === selectedDigit} labelStyle={styles.keyDigit} onPress={() => enter(digit)} style={styles.key} />
           ))}
           <Button title="Erase" onPress={() => enter(0)} style={styles.key} />
         </View>
@@ -155,11 +159,11 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   board: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center', borderTopWidth: space.hairline, borderLeftWidth: space.hairline, borderColor: colors.border },
-  boxTop: { borderTopWidth: space.line, borderTopColor: colors.accent },
-  boxLeft: { borderLeftWidth: space.line, borderLeftColor: colors.accent },
-  boxBottom: { borderBottomWidth: space.line, borderBottomColor: colors.accent },
-  boxRight: { borderRightWidth: space.line, borderRightColor: colors.accent },
-  related: { backgroundColor: colors.tint },
+  boxTop: { borderTopWidth: space.line, borderTopColor: colors.violetInk },
+  boxLeft: { borderLeftWidth: space.line, borderLeftColor: colors.violetInk },
+  boxBottom: { borderBottomWidth: space.line, borderBottomColor: colors.violetInk },
+  boxRight: { borderRightWidth: space.line, borderRightColor: colors.violetInk },
+  related: { backgroundColor: colors.violet },
   matching: { backgroundColor: colors.selected },
   wrongCell: { backgroundColor: colors.errorFill },
   focused: { backgroundColor: colors.selected, borderWidth: space.line, borderColor: colors.accent },

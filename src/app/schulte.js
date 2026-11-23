@@ -7,6 +7,8 @@ import Reveal from '../components/Reveal';
 import Pause from '../components/Pause';
 import PlayTimer from '../components/PlayTimer';
 import { useFeedback } from '../feedback';
+import { getBest } from '../storage';
+import { formatTime } from '../format';
 import { usePause } from '../use-pause';
 import ResultModal from '../components/ResultModal';
 import { colors, motion, space, type } from '../theme';
@@ -26,12 +28,14 @@ export default function SchulteScreen() {
   const [numbers, setNumbers] = useState([]);
   const [target, setTarget] = useState(1);
   const [wrong, setWrong] = useState(null);
+  const [best, setBest] = useState(null);
   const { play, animate } = useFeedback();
   const { pausedAt, pause, resume } = usePause(start);
   const [result, setResult] = useState(null);
   const [translateX] = useState(() => new Animated.Value(0));
   const running = numbers.length > 0 && result === null;
 
+  useEffect(() => { getBest('schulte').then(setBest).catch(() => {}); }, [result]);
   useEffect(() => { if (!animate) translateX.setValue(0); }, [animate, translateX]);
   useEffect(() => () => translateX.stopAnimation(), [translateX]);
 
@@ -75,6 +79,7 @@ export default function SchulteScreen() {
             <Text style={styles.label}>Visual search</Text>
             <Text accessibilityRole="header" style={styles.hero}>01 → 25</Text>
             <Text style={styles.instructions}>Tap the numbers in order.</Text>
+            {best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}
             <Button primary title="Start" onPress={begin} />
           </Reveal>
         ) : (
@@ -87,6 +92,7 @@ export default function SchulteScreen() {
             <View style={styles.progress} accessibilityLabel={`${target - 1} of 25 found`}>
               {Array.from({ length: 25 }, (_, i) => <View key={i} style={[styles.tick, i < target - 1 && styles.complete]} />)}
             </View>
+            <View style={styles.gridCaption}><Text style={styles.label}>{target - 1} / 25 found</Text>{best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}</View>
             <Animated.View style={[styles.grid, { transform: [{ translateX }] }]}>
               {numbers.map((number) => (
                 <View key={number} style={styles.slot}>
@@ -125,6 +131,7 @@ const styles = StyleSheet.create({
   time: { ...type.number, fontSize: 25, color: colors.limeInk },
   progress: { flexDirection: 'row', gap: 2 },
   tick: { flex: 1, height: 5, backgroundColor: colors.border },
+  gridCaption: { flexDirection: 'row', justifyContent: 'space-between', gap: space.sm },
   complete: { backgroundColor: colors.limeInk },
   wrong: { backgroundColor: colors.errorFill, borderColor: colors.error },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
