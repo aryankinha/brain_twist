@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import BrandMark from './BrandMark';
 import { loadPreferences } from '../storage';
 import { colors, motion, space, type } from '../theme';
 
 const marks = [
   ['✦', colors.arcadeViolet], ['▦', colors.arcadeBlue], ['●', colors.arcadePink],
-  ['◆', colors.arcadeLime], ['B', colors.paper], ['+', colors.arcadeAmber],
+  ['◆', colors.arcadeLime], ['mark', colors.arcade], ['+', colors.arcadeAmber],
   ['◒', colors.arcadePink], ['▪', colors.arcadeViolet], ['▲', colors.arcadeLime],
 ];
 
@@ -39,7 +40,7 @@ export default function LaunchMark() {
             { scale: values[index].interpolate({ inputRange: [0, 1], outputRange: [0.88, 1.06] }) },
             { translateY: values[index].interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) },
           ] }]}>
-            <Text style={styles.symbol}>{glyph}</Text>
+            {glyph === 'mark' ? <BrandMark size={47} /> : <Text allowFontScaling={false} style={styles.symbol}>{glyph}</Text>}
           </Animated.View>
         ))}
       </View>
@@ -54,6 +55,6 @@ const styles = StyleSheet.create({
   grid: { width: 170, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center', transform: [{ rotate: '-8deg' }], marginBottom: space.lg },
   tile: { width: 48, height: 48, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center' },
   symbol: { color: colors.arcade, fontSize: 25, fontWeight: '900' },
-  brand: { ...type.heading, color: colors.paper },
+  brand: { ...type.heading, color: colors.paper, textAlign: 'center', paddingHorizontal: space.md },
   loading: { ...type.label, color: colors.arcadeViolet },
 });

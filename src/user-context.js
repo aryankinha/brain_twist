@@ -1,14 +1,16 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View,
+  KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ping } from './api';
+import Avatar, { avatars, defaultAvatar } from './components/Avatar';
+import AvatarPicker from './components/AvatarPicker';
 import LaunchMark from './components/LaunchMark';
 import Reveal from './components/Reveal';
 import Button from './components/Button';
 import { loadProfile, saveProfile } from './storage';
-import { colors, space, type } from './theme';
+import { colors, space } from './theme';
 
 const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
@@ -19,6 +21,7 @@ export function UserProvider({ children }) {
   const [loadError, setLoadError] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
+  const [avatarId, setAvatarId] = useState(defaultAvatar);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
 
@@ -33,8 +36,9 @@ export function UserProvider({ children }) {
     void restore();
   }, []);
 
-  function editName() {
+  function editProfile() {
     setName(profile.name);
+    setAvatarId(Object.hasOwn(avatars, profile.avatarId) ? profile.avatarId : defaultAvatar);
     setSaveError(false);
     setEditing(true);
   }
@@ -47,6 +51,7 @@ export function UserProvider({ children }) {
     const next = {
       userId: profile?.userId ?? Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
       name: trimmed,
+      avatarId,
     };
     try {
       await saveProfile(next);
@@ -61,7 +66,7 @@ export function UserProvider({ children }) {
 
   const close = () => { if (profile && !saving) setEditing(false); };
   return (
-    <UserContext.Provider value={{ profile, editName }}>
+    <UserContext.Provider value={{ profile, editProfile }}>
       {profile ? children : loading ? <LaunchMark /> : (
         <View style={styles.center}>
           {loadError && (
@@ -78,10 +83,11 @@ export function UserProvider({ children }) {
         onRequestClose={close}
       >
         <SafeAreaView style={styles.screen}>
-          <KeyboardAvoidingView style={styles.center} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formPage}>
             <Reveal style={styles.form}>
-              <View style={styles.mark}><Text style={styles.markText}>B</Text></View>
-              <Text accessibilityRole="header" style={styles.title}>{profile ? 'Edit name' : 'Enter your name'}</Text>
+              <View style={styles.mark}><Avatar id={avatarId} size={64} /></View>
+              <Text accessibilityRole="header" style={styles.title}>{profile ? 'Edit profile' : 'Create your profile'}</Text>
               <TextInput
                 accessibilityLabel="Name"
                 placeholder="Name"
@@ -92,12 +98,13 @@ export function UserProvider({ children }) {
                 maxLength={20}
                 editable={!saving}
                 returnKeyType="done"
-                onSubmitEditing={submit}
               />
-              {saveError && <Text style={styles.error}>Couldn’t save your name. Try again.</Text>}
+              <AvatarPicker value={avatarId} onChange={setAvatarId} disabled={saving} />
+              {saveError && <Text style={styles.error}>Couldn’t save your profile. Try again.</Text>}
               <Button primary title="Save" onPress={submit} disabled={!name.trim() || saving} />
               {profile && <Button title="Cancel" onPress={close} disabled={saving} />}
             </Reveal>
+          </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
       </Modal>
@@ -108,8 +115,8 @@ export function UserProvider({ children }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.background, padding: space.lg },
-  mark: { alignSelf: 'center', borderRadius: space.card, padding: space.md, backgroundColor: colors.arcadeViolet },
-  markText: { ...type.heading, color: colors.arcade },
+  formPage: { flexGrow: 1, justifyContent: 'center', padding: space.page },
+  mark: { alignSelf: 'center' },
   form: { width: '100%', maxWidth: space.maxBoard, alignSelf: 'center', gap: space.md },
   title: { fontSize: 24, fontWeight: '700', color: colors.text },
   input: { minHeight: space.tap, padding: space.md, borderRadius: space.radius, backgroundColor: colors.paper, borderWidth: space.hairline, borderColor: colors.border, color: colors.text },

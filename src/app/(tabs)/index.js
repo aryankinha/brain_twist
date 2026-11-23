@@ -1,7 +1,9 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Avatar from '../../components/Avatar';
+import BrandMark from '../../components/BrandMark';
 import ArcadeArt from '../../components/ArcadeArt';
 import Button from '../../components/Button';
 import DifficultyPicker from '../../components/DifficultyPicker';
@@ -31,6 +33,8 @@ function openGame(key) {
 
 export default function GamesScreen() {
   const { profile } = useUser();
+  const { width, fontScale } = useWindowDimensions();
+  const compactArt = width < 360 || fontScale >= 1.3;
   const { play, animate } = useFeedback();
   const [day, setDay] = useState(dayKey);
   const [daily, setDaily] = useState(null);
@@ -71,12 +75,12 @@ export default function GamesScreen() {
       <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.top}>
           <View style={styles.brand}>
-            <View style={styles.logo} accessible={false}><Text style={styles.logoText}>B</Text></View>
+            <BrandMark />
             <Text style={styles.wordmark}>Brain Twist</Text>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.profile, pressed && styles.profilePressed]}>
             <Text numberOfLines={1} style={styles.player}>{profile.name}</Text>
-            <View style={styles.settingsButton}><Text accessible={false} style={styles.settings}>⚙</Text></View>
+            <Avatar id={profile.avatarId} size={34} />
           </Pressable>
         </View>
         <View style={styles.stats}>
@@ -90,9 +94,9 @@ export default function GamesScreen() {
             <Button title={completed ? 'Play again' : 'Play challenge'} onPress={() => { play('tap'); setDifficulty({ mode: featuredMode, fixedLevel: featured.split('-')[1] ?? 'easy' }); }} style={styles.featureButton} />
             {completed && <Text style={styles.dailyBest}>Today  {formatScore(featured, daily.value)}</Text>}
           </View>
-          <View style={styles.featureArt}>
-            <View style={styles.orbit} />
-            <ArcadeArt game={featuredMode.key} size={92} />
+          <View style={[styles.featureArt, compactArt && styles.compactArt]}>
+            <View style={[styles.orbit, compactArt && styles.compactOrbit]} />
+            <ArcadeArt game={featuredMode.key} size={compactArt ? 64 : 92} />
             <Text accessible={false} style={styles.spark}>✦</Text>
           </View>
         </Reveal>
@@ -139,15 +143,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   page: { width: '100%', maxWidth: 540, alignSelf: 'center', padding: space.page, gap: space.sm },
   top: { minHeight: space.tap, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1 },
-  logo: { width: 32, height: 32, backgroundColor: colors.arcade, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  logoText: { color: colors.arcadeLime, fontWeight: '900', fontSize: 18 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1, flexBasis: 0, flexGrow: 1 },
   wordmark: { color: colors.arcade, fontSize: 17, fontWeight: '900', flexShrink: 1 },
   profile: { minHeight: space.tap, maxWidth: '44%', flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.sm },
   player: { color: colors.muted, flexShrink: 1, fontWeight: '700' },
   profilePressed: { opacity: 0.65 },
-  settingsButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  settings: { color: colors.arcade, fontSize: 18 },
   stats: { flexDirection: 'row', gap: space.sm },
   stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.surface, borderRadius: space.radius, paddingVertical: space.sm, paddingHorizontal: space.md },
   statText: { color: colors.arcade, fontWeight: '800', fontSize: 13, flexShrink: 1 },
@@ -160,7 +160,9 @@ const styles = StyleSheet.create({
   featureButton: { alignSelf: 'flex-start', backgroundColor: colors.arcadeLime, borderColor: colors.arcadeLime, paddingHorizontal: space.sm },
   dailyBest: { color: colors.arcadeWhite, fontSize: 12, fontWeight: '700' },
   featureArt: { width: 102, minHeight: 106, alignItems: 'center', justifyContent: 'center' },
+  compactArt: { width: 72, minHeight: 78 },
   orbit: { position: 'absolute', width: 135, height: 135, borderRadius: 68, borderWidth: space.line, borderColor: colors.arcadeLine },
+  compactOrbit: { width: 92, height: 92, borderRadius: 46 },
   spark: { position: 'absolute', top: 0, right: 0, color: colors.arcadeLime, fontSize: 24, textShadowColor: colors.arcade, textShadowRadius: 3 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: space.sm },
   section: { ...type.heading, fontSize: 24, color: colors.arcade },
