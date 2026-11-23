@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { submitScore } from '../api';
 import { useFeedback } from '../feedback';
 import { dayKey } from '../progress';
-import { formatScore } from '../format';
+import { formatScore, scoreUnit } from '../format';
 import { saveBest } from '../storage';
 import { colors, space, type } from '../theme';
 import { useUser } from '../user-context';
@@ -51,7 +51,8 @@ export default function ResultModal({ game, value, children = null, onAgain, onB
     announced.current = true;
     play(newBest || record.dailyCompleted ? 'record' : 'correct');
   }, [newBest, play, record]);
-  const difference = record?.previous == null ? null : game === 'stroop'
+  const unit = scoreUnit(game);
+  const difference = record?.previous == null ? null : unit === 'points'
     ? value - record.previous
     : record.previous - value;
 
@@ -63,12 +64,14 @@ export default function ResultModal({ game, value, children = null, onAgain, onB
           <Text accessibilityRole="header" style={styles.title}>{newBest ? (record.previous == null ? 'First record' : 'New personal best') : 'Round complete'}</Text>
           <View style={[styles.score, newBest && styles.record]}>
             <Text style={styles.value}>{formatScore(game, value)}</Text>
-            <Text style={styles.label}>{game === 'stroop' ? 'POINTS' : 'FINISH TIME'}</Text>
+            <Text style={styles.label}>{unit === 'time' ? 'FINISH TIME' : unit.toUpperCase()}</Text>
           </View>
           <Text style={styles.text}>Personal best  {formatScore(game, record?.best)}</Text>
           {difference !== null && difference !== 0 && (
             <Text style={styles.status}>
-              {game === 'stroop'
+              {unit === 'moves'
+                ? `${Math.abs(difference)} ${Math.abs(difference) === 1 ? 'move' : 'moves'} ${difference > 0 ? 'fewer' : 'more'} than your previous best`
+                : unit === 'points'
                 ? `${Math.abs(difference)} ${difference > 0 ? 'above' : 'below'} your previous best`
                 : `${(Math.abs(difference) / 1000).toFixed(1)}s ${difference > 0 ? 'faster' : 'slower'} than your previous best`}
             </Text>

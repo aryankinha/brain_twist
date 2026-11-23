@@ -12,6 +12,7 @@ import { useUser } from '../../user-context';
 
 const modes = [
   { key: 'sudoku', levels: true, title: 'Sudoku', category: 'Logic', glyph: '▦', tone: colors.violet, ink: colors.violetInk },
+  { key: 'lights', levels: true, title: 'Lights Out', category: 'Logic', glyph: '⊙', tone: colors.amber, ink: colors.amberInk },
   { key: 'schulte', title: 'Schulte', category: 'Focus', glyph: '01', tone: colors.lime, ink: colors.limeInk },
   { key: 'stroop', title: 'Stroop', category: 'Speed', glyph: 'Aa', tone: colors.peach, ink: colors.peachInk },
 ];

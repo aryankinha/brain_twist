@@ -5,6 +5,9 @@ const games = {
   'sudoku-easy': { order: 'asc', min: 1000, max: 10800000 },
   'sudoku-medium': { order: 'asc', min: 1000, max: 10800000 },
   'sudoku-hard': { order: 'asc', min: 1000, max: 10800000 },
+  'lights-easy': { order: 'asc', min: 1, max: 100000 },
+  'lights-medium': { order: 'asc', min: 1, max: 100000 },
+  'lights-hard': { order: 'asc', min: 1, max: 100000 },
   schulte: { order: 'asc', min: 1000, max: 600000 },
   stroop: { order: 'desc', min: 0, max: 200 },
 };

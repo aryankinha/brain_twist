@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getLeaderboard } from '../../api';
 import Button from '../../components/Button';
-import { formatScore, gameLabels } from '../../format';
+import { formatScore, gameLabels, scoreUnit } from '../../format';
 import { colors, space, type } from '../../theme';
 import { useUser } from '../../user-context';
 
@@ -64,7 +64,7 @@ export default function LeaderboardScreen() {
       </View>
       <View style={styles.boardHeader}>
         <Text style={styles.boardTitle}>{gameLabels[game]}</Text>
-        <Text style={styles.boardHint}>{game === 'stroop' ? 'Highest score wins' : 'Fastest time wins'}</Text>
+        <Text style={styles.boardHint}>{{ points: 'Highest score wins', moves: 'Fewest moves wins', time: 'Fastest time wins' }[scoreUnit(game)]}</Text>
       </View>
       {status === 'loading' && !refreshing && <ActivityIndicator style={styles.padded} color={colors.accent} />}
       {status === 'error' && (
