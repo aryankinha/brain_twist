@@ -121,6 +121,9 @@ export default function SudokuScreen() {
           <View><Text style={styles.label}>Mistakes</Text><Text style={[styles.stat, mistakes > 0 && styles.error]}>{mistakes}</Text></View>
           <Button title="Pause" onPress={pause} disabled={!running} />
         </View>
+        <View style={[styles.progress, { width: cell * 9 }]} accessible accessibilityLabel={`${filled} of 81 cells solved`}>
+          <View style={[styles.progressFill, { width: `${filled / 81 * 100}%` }]} />
+        </View>
         <View style={[styles.board, { width: cell * 9 }]}>
           {board.map((digit, index) => (
             <Cell key={index} index={index} digit={digit} given={given[index]} size={cell} select={select}
@@ -157,6 +160,8 @@ const styles = StyleSheet.create({
   stat: { ...type.number, fontSize: 25, color: colors.text },
   label: { ...type.label, color: colors.muted },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  progress: { height: 5, backgroundColor: colors.violet, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: colors.violetInk },
   board: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { backgroundColor: colors.paper, alignItems: 'center', justifyContent: 'center', borderTopWidth: space.hairline, borderLeftWidth: space.hairline, borderColor: colors.border },
   boxTop: { borderTopWidth: space.line, borderTopColor: colors.violetInk },

@@ -5,9 +5,13 @@ export const gameLabels = {
   'lights-easy': 'Lights Out Easy',
   'lights-medium': 'Lights Out Medium',
   'lights-hard': 'Lights Out Hard',
-  schulte: 'Schulte',
+  schulte: 'Schulte Easy',
+  'schulte-medium': 'Schulte Medium',
+  'schulte-hard': 'Schulte Hard',
   stroop: 'Stroop',
-  sequence: 'Sequence Memory',
+  sequence: 'Sequence Memory Easy',
+  'sequence-medium': 'Sequence Memory Medium',
+  'sequence-hard': 'Sequence Memory Hard',
 };
 
 export function formatTime(ms, tenths = false) {
@@ -18,16 +22,16 @@ export function formatTime(ms, tenths = false) {
 
 export function scoreUnit(game) {
   if (game === 'stroop') return 'points';
-  if (game === 'sequence') return 'rounds';
+  if (game.startsWith('sequence')) return 'rounds';
   return game.startsWith('lights-') ? 'moves' : 'time';
 }
 
 export function higherScoreWins(game) {
-  return game === 'stroop' || game === 'sequence';
+  return game === 'stroop' || game.startsWith('sequence');
 }
 
 export function formatScore(game, value) {
   if (value == null) return '—';
   if (scoreUnit(game) !== 'time') return String(value);
-  return formatTime(value, game === 'schulte');
+  return formatTime(value, game.startsWith('schulte'));
 }

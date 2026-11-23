@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ArcadeArt from '../../components/ArcadeArt';
 import Button from '../../components/Button';
+import DifficultyPicker from '../../components/DifficultyPicker';
 import Reveal from '../../components/Reveal';
 import { useFeedback } from '../../feedback';
 import { formatScore, gameLabels } from '../../format';
@@ -15,11 +16,10 @@ import { useUser } from '../../user-context';
 const modes = [
   { key: 'sudoku', levels: true, title: 'Sudoku', category: 'Logic', tone: colors.arcadeViolet },
   { key: 'lights', levels: true, title: 'Lights Out', category: 'Logic', tone: colors.arcadeAmber },
-  { key: 'schulte', title: 'Schulte', category: 'Focus', tone: colors.arcadeLime },
-  { key: 'sequence', title: 'Sequence Memory', category: 'Memory', tone: colors.arcadeBlue },
+  { key: 'schulte', levels: true, title: 'Schulte', category: 'Focus', tone: colors.arcadeLime },
+  { key: 'sequence', levels: true, title: 'Sequence Memory', category: 'Memory', tone: colors.arcadeBlue },
   { key: 'stroop', title: 'Stroop', category: 'Speed', tone: colors.arcadePink },
 ];
-const difficulties = ['easy', 'medium', 'hard'];
 const categories = ['All', 'Logic', 'Focus', 'Memory', 'Speed'];
 
 function openGame(key) {
@@ -87,7 +87,7 @@ export default function GamesScreen() {
           <View style={styles.featureCopy}>
             <Text style={styles.featureLabel}>{completed ? '✓ Daily complete' : 'Daily challenge'}</Text>
             <Text accessibilityRole="header" style={styles.featureTitle}>{gameLabels[featured]}</Text>
-            <Button title={completed ? 'Play again' : 'Play challenge'} onPress={() => launch(featured)} style={styles.featureButton} />
+            <Button title={completed ? 'Play again' : 'Play challenge'} onPress={() => { play('tap'); setDifficulty({ mode: featuredMode, fixedLevel: featured.split('-')[1] ?? 'easy' }); }} style={styles.featureButton} />
             {completed && <Text style={styles.dailyBest}>Today  {formatScore(featured, daily.value)}</Text>}
           </View>
           <View style={styles.featureArt}>
@@ -113,10 +113,7 @@ export default function GamesScreen() {
           {modes.filter((mode) => category === 'All' || mode.category === category).map((mode) => (
             <Pressable key={mode.key} accessibilityRole="button"
               accessibilityLabel={mode.levels ? `${mode.title} levels` : `Play ${mode.title}`}
-              onPress={() => {
-                if (mode.levels) { play('tap'); setDifficulty(mode); }
-                else launch(mode.key);
-              }}
+              onPress={() => { play('tap'); setDifficulty({ mode, fixedLevel: null }); }}
               style={({ pressed }) => [styles.mode, mode.key === 'stroop' && styles.wideMode, pressed && styles.pressed, pressed && animate && styles.compress]}>
               <View style={[styles.modeArt, mode.key === 'stroop' && styles.wideArt, { backgroundColor: mode.tone }]}>
                 <ArcadeArt game={mode.key} size={54} card />
@@ -131,26 +128,8 @@ export default function GamesScreen() {
         </View>
       </ScrollView>
       {difficulty && (
-        <Modal transparent visible onRequestClose={() => setDifficulty(null)}>
-          <SafeAreaView style={styles.overlay}>
-            <Reveal style={styles.sheet}>
-              <View style={styles.sheetHeader}>
-                <Text accessibilityRole="header" style={styles.section}>{difficulty.title}</Text>
-                <Button title="Close" onPress={() => setDifficulty(null)} />
-              </View>
-              {difficulties.map((level) => {
-                const key = `${difficulty.key}-${level}`;
-                return (
-                  <Pressable key={key} accessibilityRole="button" accessibilityLabel={`${gameLabels[key]}, best ${formatScore(key, bests[key])}`}
-                    onPress={() => launch(key)} style={({ pressed }) => [styles.level, pressed && styles.pressed]}>
-                    <Text style={styles.levelName}>{level}</Text>
-                    <Text style={styles.modeDetail}>Best {formatScore(key, bests[key])}  ↗</Text>
-                  </Pressable>
-                );
-              })}
-            </Reveal>
-          </SafeAreaView>
-        </Modal>
+        <DifficultyPicker mode={difficulty.mode} fixedLevel={difficulty.fixedLevel} bests={bests}
+          onClose={() => setDifficulty(null)} onContinue={launch} />
       )}
     </SafeAreaView>
   );
@@ -203,9 +182,4 @@ const styles = StyleSheet.create({
   wideArrow: { top: space.sm },
   pressed: { opacity: 0.74 },
   compress: { transform: [{ scale: motion.press }] },
-  overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end', alignItems: 'center' },
-  sheet: { padding: space.page, gap: space.sm, backgroundColor: colors.paper, borderTopLeftRadius: space.card, borderTopRightRadius: space.card, width: '100%', maxWidth: 540 },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  level: { minHeight: space.tap, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.sm, borderRadius: space.radius, backgroundColor: colors.surface },
-  levelName: { fontWeight: '900', color: colors.arcade, textTransform: 'capitalize' },
 });

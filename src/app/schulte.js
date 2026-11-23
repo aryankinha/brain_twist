@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,21 +8,21 @@ import Pause from '../components/Pause';
 import PlayTimer from '../components/PlayTimer';
 import { useFeedback } from '../feedback';
 import { getBest } from '../storage';
-import { formatTime } from '../format';
+import { levelKey, readDifficulty } from '../difficulty';
+import { schulteLevels, shuffleNumbers } from '../games/schulte';
+import { formatTime, gameLabels } from '../format';
 import { usePause } from '../use-pause';
 import ResultModal from '../components/ResultModal';
 import { colors, motion, space, type } from '../theme';
 
-function shuffleNumbers() {
-  const numbers = Array.from({ length: 25 }, (_, index) => index + 1);
-  for (let i = numbers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-  }
-  return numbers;
-}
+const groupInks = [colors.violetInk, colors.skyInk, colors.amberInk, colors.accent, colors.peachInk];
 
 export default function SchulteScreen() {
+  const { difficulty: requested } = useLocalSearchParams();
+  const difficulty = readDifficulty(requested);
+  const game = levelKey('schulte', difficulty);
+  const { size, cue } = schulteLevels[difficulty];
+  const total = size * size;
   const start = useRef(0);
   const next = useRef(1);
   const [numbers, setNumbers] = useState([]);
@@ -35,13 +35,13 @@ export default function SchulteScreen() {
   const [translateX] = useState(() => new Animated.Value(0));
   const running = numbers.length > 0 && result === null;
 
-  useEffect(() => { getBest('schulte').then(setBest).catch(() => {}); }, [result]);
+  useEffect(() => { getBest(game).then(setBest).catch(() => {}); }, [game, result]);
   useEffect(() => { if (!animate) translateX.setValue(0); }, [animate, translateX]);
   useEffect(() => () => translateX.stopAnimation(), [translateX]);
 
   function begin() {
     resume();
-    const shuffled = shuffleNumbers();
+    const shuffled = shuffleNumbers(size);
     start.current = Date.now();
     next.current = 1;
     translateX.setValue(0);
@@ -53,7 +53,7 @@ export default function SchulteScreen() {
 
   const tap = useCallback((number) => {
     const expected = next.current;
-    if (pausedAt !== null || number < expected || expected > 25) return;
+    if (pausedAt !== null || number < expected || expected > total) return;
     if (number !== expected) {
       setWrong(number);
       play('wrong');
@@ -66,45 +66,46 @@ export default function SchulteScreen() {
     }
     setWrong(null);
     next.current += 1;
-    if (number < 25) play('tap');
+    if (number < total) play('tap');
     setTarget(next.current);
-    if (number === 25) setResult(Date.now() - start.current);
-  }, [animate, pausedAt, play, translateX]);
+    if (number === total) setResult(Date.now() - start.current);
+  }, [animate, pausedAt, play, total, translateX]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
+      <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
         {numbers.length === 0 ? (
           <Reveal style={[styles.content, styles.intro]}>
             <Text style={styles.label}>Visual search</Text>
-            <Text accessibilityRole="header" style={styles.hero}>01 → 25</Text>
-            <Text style={styles.instructions}>Tap the numbers in order.</Text>
+            <Text accessibilityRole="header" style={styles.hero}>01 → {total}</Text>
+            <Text style={styles.instructions}>{cue === 'target' ? 'Follow the highlighted number.' : cue === 'groups' ? 'Find numbers in order. Colors mark groups of five.' : 'Find every number in order. All numbers look alike.'}</Text>
             {best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}
             <Button primary title="Start" onPress={begin} />
           </Reveal>
         ) : (
           <View style={styles.content}>
             <View style={styles.stats}>
-              <View><Text style={styles.label}>Find</Text><Text style={styles.target}>{target <= 25 ? String(target).padStart(2, '0') : '✓'}</Text></View>
+              <View><Text style={styles.label}>Find</Text><Text style={styles.target}>{target <= total ? String(target).padStart(2, '0') : '✓'}</Text></View>
               <View><Text style={styles.label}>Time</Text><PlayTimer start={start} running={running} result={result} pausedAt={pausedAt} tenths style={styles.time} /></View>
               <Button title="Pause" onPress={pause} disabled={!running} />
             </View>
-            <View style={styles.progress} accessibilityLabel={`${target - 1} of 25 found`}>
-              {Array.from({ length: 25 }, (_, i) => <View key={i} style={[styles.tick, i < target - 1 && styles.complete]} />)}
+            <View style={styles.progress} accessibilityLabel={`${target - 1} of ${total} found`}>
+              {Array.from({ length: total }, (_, i) => <View key={i} style={[styles.tick, i < target - 1 && styles.complete]} />)}
             </View>
-            <View style={styles.gridCaption}><Text style={styles.label}>{target - 1} / 25 found</Text>{best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}</View>
+            <View style={styles.gridCaption}><Text style={styles.label}>{target - 1} / {total} found</Text>{best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}</View>
             <Animated.View style={[styles.grid, { transform: [{ translateX }] }]}>
               {numbers.map((number) => (
-                <View key={number} style={styles.slot}>
+                <View key={number} style={[styles.slot, { width: `${100 / size}%` }]}>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${number}${number < target ? ' found' : wrong === number ? ' wrong target' : ''}`}
                     accessibilityState={{ disabled: number < target }}
                     disabled={number < target}
                     onPress={() => tap(number)}
-                    style={({ pressed }) => [styles.cell, number < target && styles.found, wrong === number && styles.wrong, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.cell, cue === 'target' && number === target && styles.targetCell, number < target && styles.found, wrong === number && styles.wrong, pressed && styles.pressed]}
                   >
-                    <Text style={[styles.number, number < target && styles.foundText]}>{number < target ? '✓' : wrong === number ? `${number} ×` : number}</Text>
+                    <Text style={[styles.number, cue === 'groups' && { color: groupInks[(Math.ceil(number / 5) - 1) % groupInks.length] }, number < target && styles.foundText]}>{number < target ? '✓' : wrong === number ? `${number} ×` : number}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -113,7 +114,7 @@ export default function SchulteScreen() {
         )}
       </ScrollView>
       {pausedAt !== null && <Pause onResume={resume} onRestart={begin} onLeave={() => router.back()} />}
-      {result !== null && <ResultModal game="schulte" value={result} onAgain={begin} onBack={() => router.back()} />}
+      {result !== null && <ResultModal game={game} value={result} onAgain={begin} onBack={() => router.back()} />}
     </SafeAreaView>
   );
 }
@@ -135,8 +136,9 @@ const styles = StyleSheet.create({
   complete: { backgroundColor: colors.limeInk },
   wrong: { backgroundColor: colors.errorFill, borderColor: colors.error },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  slot: { width: '20%', aspectRatio: 1, padding: space.line },
+  slot: { aspectRatio: 1, padding: space.line },
   cell: { flex: 1, backgroundColor: colors.paper, borderRadius: space.md, alignItems: 'center', justifyContent: 'center', borderWidth: space.hairline, borderColor: colors.border },
+  targetCell: { backgroundColor: colors.arcadeLime, borderColor: colors.limeInk, borderWidth: space.line },
   found: { backgroundColor: colors.correct, borderColor: colors.correct },
   foundText: { color: colors.limeInk },
   number: { color: colors.text, fontSize: 20, fontWeight: '600' },

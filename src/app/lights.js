@@ -8,7 +8,8 @@ import PlayTimer from '../components/PlayTimer';
 import ResultModal from '../components/ResultModal';
 import Reveal from '../components/Reveal';
 import { useFeedback } from '../feedback';
-import { formatTime } from '../format';
+import { readDifficulty } from '../difficulty';
+import { formatTime, gameLabels } from '../format';
 import { levels, lightsReducer, newLights } from '../games/lights';
 import { colors, motion, space, type } from '../theme';
 import { useGamePulse } from '../use-game-pulse';
@@ -16,7 +17,8 @@ import { usePause } from '../use-pause';
 
 export default function LightsScreen() {
   const { difficulty: requested } = useLocalSearchParams();
-  const [difficulty, setDifficulty] = useState(requested === 'medium' || requested === 'hard' ? requested : 'easy');
+  const difficulty = readDifficulty(requested);
+  const game = `lights-${difficulty}`;
   const [round, dispatch] = useReducer(lightsReducer, null);
   const { bump, pulse } = useGamePulse();
   const [lastTap, setLastTap] = useState(null);
@@ -29,6 +31,7 @@ export default function LightsScreen() {
   const side = Math.min(width - space.xl, space.maxBoard);
   const cell = Math.floor((side - (size - 1) * space.sm) / size);
   const finished = round && round.elapsed !== null;
+  const lit = round?.board.filter(Boolean).length ?? 0;
 
   function begin() {
     const board = newLights(difficulty);
@@ -49,21 +52,17 @@ export default function LightsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
-      <Stack.Screen options={{ title: 'Lights Out' }} />
+      <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
         {!round ? (
           <Reveal style={styles.intro}>
+            <Text style={styles.label}>{difficulty} · {size} × {size}</Text>
             <View style={styles.preview} accessible={false}>
               {[false, true, false, true, true, true, false, true, false].map((on, index) =>
                 <View key={index} style={[styles.previewTile, on && styles.previewOn]} />)}
             </View>
             <Text accessibilityRole="header" style={styles.heading}>Switch off every light</Text>
             <Text style={styles.body}>A tap flips its tile and the four tiles beside it. Use as few moves as you can.</Text>
-            <View style={styles.options}>
-              {Object.keys(levels).map((level) =>
-                <Button key={level} title={level[0].toUpperCase() + level.slice(1)}
-                  onPress={() => setDifficulty(level)} selected={level === difficulty} style={styles.option} />)}
-            </View>
             <Button primary title="Start puzzle" onPress={begin} />
           </Reveal>
         ) : (
@@ -72,6 +71,9 @@ export default function LightsScreen() {
               <View><Text style={styles.label}>Moves</Text><Text style={styles.metric}>{round.moves}</Text></View>
               <View><Text style={styles.label}>Time</Text><PlayTimer key={roundId} start={start} running={!finished} pausedAt={pausedAt} result={round.elapsed} style={styles.metric} /></View>
               <Button title="Pause" onPress={pause} disabled={finished} />
+            </View>
+            <View style={styles.progress} accessible accessibilityLabel={`${lit} lights on`}>
+              <View style={[styles.progressFill, { width: `${lit / (size * size) * 100}%` }]} />
             </View>
             <View style={styles.grid}>
               {round.board.map((on, index) => (
@@ -84,14 +86,14 @@ export default function LightsScreen() {
               ))}
             </View>
             <View style={styles.footer}>
-              <Text style={styles.caption}>{round.board.filter(Boolean).length} lights on</Text><Text style={styles.caption}>{size} × {size} board</Text>
+              <Text style={styles.caption}>{lit} lights on</Text><Text style={styles.caption}>{size} × {size} board</Text>
             </View>
           </View>
         )}
       </ScrollView>
       {pausedAt !== null && <Pause onResume={resume} onRestart={begin} onLeave={() => router.back()} />}
       {finished && (
-        <ResultModal game={`lights-${difficulty}`} value={round.moves} onAgain={begin} onBack={() => router.back()}>
+        <ResultModal game={game} value={round.moves} onAgain={begin} onBack={() => router.back()}>
           <Text style={styles.body}>Time  {formatTime(round.elapsed, true)}</Text>
         </ResultModal>
       )}
@@ -108,12 +110,12 @@ const styles = StyleSheet.create({
   preview: { width: 120, padding: 12, gap: 6, borderRadius: space.card, backgroundColor: colors.amber, flexDirection: 'row', flexWrap: 'wrap' },
   previewTile: { width: 28, height: 28, borderRadius: 6, backgroundColor: colors.paper },
   previewOn: { backgroundColor: colors.amberInk },
-  options: { flexDirection: 'row', gap: space.sm },
-  option: { flex: 1, paddingHorizontal: space.xs },
   play: { gap: space.md },
   hud: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   label: { ...type.label, color: colors.muted },
   metric: { ...type.number, fontSize: 26, color: colors.text },
+  progress: { height: 5, borderRadius: 3, overflow: 'hidden', backgroundColor: colors.amber },
+  progressFill: { height: '100%', backgroundColor: colors.amberInk },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   tile: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: space.hairline, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center' },
   on: { backgroundColor: colors.arcadeAmber, borderColor: colors.amberInk },

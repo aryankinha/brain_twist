@@ -1,12 +1,18 @@
 export const initialSequence = { pattern: [], phase: 'ready', score: 0, step: 0, cue: null, miss: null };
 
-export function nextTile(previous, random = Math.random) {
-  const options = [0, 1, 2, 3].filter((tile) => tile !== previous);
-  return options[Math.floor(random() * options.length)];
+export const sequenceLevels = {
+  easy: { size: 2, opening: 3, flash: 590 },
+  medium: { size: 3, opening: 4, flash: 530 },
+  hard: { size: 4, opening: 5, flash: 470 },
+};
+
+export function nextTile(previous, count, random = Math.random) {
+  const index = Math.floor(random() * (previous == null ? count : count - 1));
+  return previous != null && index >= previous ? index + 1 : index;
 }
 
-export function flashDuration(score) {
-  return Math.max(280, 590 - score * 26);
+export function flashDuration(score, base) {
+  return Math.max(280, base - score * 26);
 }
 
 export function sequenceReducer(state, action) {
