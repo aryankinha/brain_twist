@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ExpoApp",
+    "name": "Brain Games",
     "slug": "ExpoApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,6 +19,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ]
+    ]
   }
 }
