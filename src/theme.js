@@ -36,6 +36,13 @@ export const stroopColors = {
   YELLOW: '#F9A825',
 };
 
+export const stroopInk = {
+  RED: '#BA2929',
+  GREEN: '#247540',
+  BLUE: '#176CB8',
+  YELLOW: '#8B6200',
+};
+
 export const space = {
   hairline: 1,
   line: 2,

@@ -7,10 +7,18 @@ import { formatScore, gameLabels, scoreUnit } from '../../format';
 import { colors, space, type } from '../../theme';
 import { useUser } from '../../user-context';
 
+const tabs = [
+  ['sudoku', 'Sudoku'], ['lights', 'Lights Out'], ['schulte', 'Schulte'],
+  ['sequence', 'Sequence Memory'], ['stroop', 'Stroop'],
+];
+const levels = ['easy', 'medium', 'hard'];
+
 export default function LeaderboardScreen() {
   const { profile } = useUser();
   const userId = profile.userId;
   const [game, setGame] = useState('sudoku-easy');
+  const group = game.split('-')[0];
+  const usesLevels = group === 'sudoku' || group === 'lights';
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState('loading');
   const [refreshing, setRefreshing] = useState(false);
@@ -57,11 +65,20 @@ export default function LeaderboardScreen() {
     <View style={styles.screen}>
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {Object.entries(gameLabels).map(([key, label]) => (
-            <Button key={key} title={label} selected={key === game} onPress={() => select(key)} />
+          {tabs.map(([key, label]) => (
+            <Button key={key} title={label} selected={key === group}
+              onPress={() => select(key === 'sudoku' || key === 'lights' ? `${key}-easy` : key)} />
           ))}
         </ScrollView>
       </View>
+      {usesLevels && (
+        <View style={styles.levels}>
+          {levels.map((level) => {
+            const key = `${group}-${level}`;
+            return <Button key={key} title={level[0].toUpperCase() + level.slice(1)} selected={game === key} onPress={() => select(key)} style={styles.level} />;
+          })}
+        </View>
+      )}
       <View style={styles.boardHeader}>
         <Text style={styles.boardTitle}>{gameLabels[game]}</Text>
         <Text style={styles.boardHint}>{{ points: 'Highest score wins', rounds: 'Most rounds wins', moves: 'Fewest moves wins', time: 'Fastest time wins' }[scoreUnit(game)]}</Text>
@@ -96,6 +113,8 @@ export default function LeaderboardScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   chips: { padding: space.page, gap: space.sm },
+  levels: { flexDirection: 'row', marginHorizontal: space.page, marginBottom: space.md, gap: space.sm },
+  level: { flex: 1, paddingHorizontal: space.xs },
   padded: { padding: space.page },
   feedback: { padding: space.page, gap: space.md, alignItems: 'flex-start' },
   muted: { color: colors.muted },

@@ -11,7 +11,7 @@ import { useUser } from '../user-context';
 import Reveal from './Reveal';
 import Button from './Button';
 
-export default function ResultModal({ game, value, children = null, title = 'Round complete', onAgain, onBack }) {
+export default function ResultModal({ game, value, children = null, title = null, onAgain, onBack }) {
   const { profile } = useUser();
   const { userId, name } = profile;
   const [attempt, setAttempt] = useState(0);
@@ -61,10 +61,11 @@ export default function ResultModal({ game, value, children = null, title = 'Rou
       <SafeAreaView style={styles.overlay}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.center}>
         <Reveal style={styles.card}>
-          <Text accessibilityRole="header" style={styles.title}>{newBest ? (record.previous == null ? 'First record' : 'New personal best') : title}</Text>
+          <Text accessibilityRole="header" style={styles.title}>{title ?? (newBest ? (record.previous == null ? 'First record' : 'New personal best') : 'Round complete')}</Text>
           <View style={[styles.score, newBest && styles.record]}>
             <Text style={styles.value}>{formatScore(game, value)}</Text>
             <Text style={styles.label}>{unit === 'time' ? 'FINISH TIME' : unit.toUpperCase()}</Text>
+            {title && newBest && <Text style={styles.label}>✓ {record.previous == null ? 'First record' : 'New personal best'}</Text>}
           </View>
           <Text style={styles.text}>Personal best  {formatScore(game, record?.best)}</Text>
           {difference !== null && difference !== 0 && (

@@ -8,7 +8,7 @@ import Pause from '../components/Pause';
 import { useFeedback } from '../feedback';
 import { usePause } from '../use-pause';
 import ResultModal from '../components/ResultModal';
-import { colors, motion, space, stroopColors, type } from '../theme';
+import { colors, motion, space, stroopColors, stroopInk, type } from '../theme';
 
 const CONGRUENT_RATE = 0.3;
 const ROUND_MS = 30_000;
@@ -135,7 +135,7 @@ export default function StroopScreen() {
             </View>
             <View style={styles.prompt}>
               <Text style={styles.promptLabel}>Match the ink</Text>
-              <Animated.Text adjustsFontSizeToFit numberOfLines={1} style={[styles.word, { color: stroopColors[trial.ink], transform: [{ scale: pulse }] }]}>{trial.word}</Animated.Text>
+              <Animated.Text adjustsFontSizeToFit numberOfLines={1} style={[styles.word, { color: stroopInk[trial.ink], transform: [{ scale: pulse }] }]}>{trial.word}</Animated.Text>
               <Text style={[styles.feedback, stats.feedback === 'Miss' && styles.feedbackMiss]}>
                 {stats.feedback === 'Correct' ? `✓ Correct${stats.streak > 1 ? ` · ${stats.streak} combo` : ''}` : stats.feedback === 'Miss' ? '× Miss' : ' '}
               </Text>
@@ -177,20 +177,20 @@ const styles = StyleSheet.create({
   playfield: { flexGrow: 1, paddingBottom: space.sm },
   intro: { backgroundColor: colors.peach, padding: space.lg, borderRadius: space.card },
   introTitle: { ...type.heading, color: colors.peachInk },
-  demo: { ...type.display, color: stroopColors.RED, backgroundColor: colors.hero, textAlign: 'center', padding: space.md },
+  demo: { ...type.display, color: stroopInk.RED, backgroundColor: colors.paper, textAlign: 'center', padding: space.md },
   label: { ...type.label, color: colors.muted },
   hud: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.xs },
   metric: { ...type.number, fontSize: 25, color: colors.text },
   instruction: { color: colors.peachInk, fontSize: 16, lineHeight: 23 },
   track: { backgroundColor: colors.tint, height: space.sm, borderRadius: space.sm, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.accent, borderRadius: space.sm },
-  prompt: { flexGrow: 1, minHeight: 170, justifyContent: 'center', backgroundColor: colors.text, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
-  promptLabel: { color: colors.heroText, textAlign: 'center', fontWeight: '700' },
+  prompt: { flexGrow: 1, minHeight: 170, justifyContent: 'center', backgroundColor: colors.surface, borderWidth: space.hairline, borderColor: colors.border, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
+  promptLabel: { color: colors.muted, textAlign: 'center', fontWeight: '700' },
   warning: { color: colors.error },
   urgent: { backgroundColor: colors.error },
   word: { ...type.display, fontSize: 68, color: colors.paper, textAlign: 'center' },
-  feedback: { color: colors.lime, fontSize: 14, fontWeight: '800', textAlign: 'center' },
-  feedbackMiss: { color: colors.peach },
+  feedback: { color: colors.accent, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  feedbackMiss: { color: colors.error },
   answers: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: space.sm },
   answer: { width: '48%', minHeight: 66, paddingHorizontal: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: space.line, borderColor: colors.text, borderRadius: space.radius, backgroundColor: colors.paper },
   choiceCorrect: { borderColor: colors.accent },
