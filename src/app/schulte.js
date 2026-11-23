@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import Reveal from '../components/Reveal';
+import GameBrief from '../components/GameBrief';
+import ArcadeArt from '../components/ArcadeArt';
 import Pause from '../components/Pause';
 import PlayTimer from '../components/PlayTimer';
 import { useFeedback } from '../feedback';
@@ -76,13 +77,11 @@ export default function SchulteScreen() {
       <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
         {numbers.length === 0 ? (
-          <Reveal style={[styles.content, styles.intro]}>
-            <Text style={styles.label}>Visual search</Text>
-            <Text accessibilityRole="header" style={styles.hero}>01 → {total}</Text>
-            <Text style={styles.instructions}>{cue === 'target' ? 'Follow the highlighted number.' : cue === 'groups' ? 'Find numbers in order. Colors mark groups of five.' : 'Find every number in order. All numbers look alike.'}</Text>
-            {best != null && <Text style={styles.label}>Best {formatTime(best, true)}</Text>}
-            <Button primary title="Start" onPress={begin} />
-          </Reveal>
+          <GameBrief kicker={`${difficulty} · Visual search`} title={`Find 01–${total}`} tone={colors.lime}
+            detail={cue === 'target' ? 'Tap the numbers in order. The next number is highlighted.' : cue === 'groups' ? 'Tap the numbers in order. Color groups mark every five numbers.' : 'Find every number in order. All numbers look alike.'}
+            best={best == null ? '—' : formatTime(best, true)} startLabel="Start" onStart={begin}>
+            <ArcadeArt game="schulte" size={188} card highlight={cue === 'target'} />
+          </GameBrief>
         ) : (
           <View style={styles.content}>
             <View style={styles.stats}>
@@ -122,11 +121,8 @@ export default function SchulteScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   page: { flexGrow: 1, padding: space.page, alignItems: 'center', justifyContent: 'flex-start' },
-  content: { width: '100%', maxWidth: space.maxBoard, gap: space.page },
-  intro: { backgroundColor: colors.lime, padding: space.lg, borderRadius: space.card },
-  instructions: { color: colors.limeInk, fontSize: 16, lineHeight: 23 },
+  content: { flexGrow: 1, justifyContent: 'center', width: '100%', maxWidth: space.maxBoard, gap: space.page },
   stats: { backgroundColor: colors.arcadeLime, padding: space.page, borderRadius: space.radius, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  hero: { ...type.display, color: colors.limeInk },
   label: { ...type.label, color: colors.limeInk },
   target: { ...type.display, lineHeight: 54, color: colors.limeInk },
   time: { ...type.number, fontSize: 25, color: colors.limeInk },

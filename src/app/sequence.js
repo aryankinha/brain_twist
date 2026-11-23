@@ -2,9 +2,8 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Animated, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../components/Button';
 import ResultModal from '../components/ResultModal';
-import Reveal from '../components/Reveal';
+import GameBrief from '../components/GameBrief';
 import { levelKey, readDifficulty } from '../difficulty';
 import { gameLabels } from '../format';
 import { getBest } from '../storage';
@@ -86,22 +85,17 @@ export default function SequenceScreen() {
       <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
         {phase === 'ready' ? (
-          <Reveal style={styles.playfield}>
-            <View style={styles.intro}>
-              <Text style={styles.label}>{size} × {size} board · {opening} opening cues</Text>
-              <Text accessibilityRole="header" style={styles.title}>Watch. Remember. Repeat.</Text>
-              <View style={styles.demo} accessible={false}>
-                {shapes.slice(0, 4).map(([label, glyph], index) => (
-                  <View key={label} style={[styles.demoTile, { backgroundColor: palette[index][0] }]}>
-                    <Text style={[styles.demoGlyph, { color: palette[index][1] }]}>{glyph}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.body}>Repeat the flashes. Each round adds one shape.</Text>
-              <Text style={styles.label}>Best: {best == null ? '—' : `${best} rounds`}</Text>
+          <GameBrief kicker={`${size} × ${size} · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
+            detail="Repeat the flashes in order. Each round adds one shape." best={best == null ? '—' : `${best} rounds`}
+            startLabel="Start sequence" onStart={begin}>
+            <View style={styles.demo}>
+              {shapes.slice(0, count).map(([label, glyph], index) => (
+                <View key={label} style={[styles.demoTile, { width: `${94 / size}%`, backgroundColor: palette[index % palette.length][0] }]}>
+                  <Text style={[styles.demoGlyph, { color: palette[index % palette.length][1] }]}>{glyph}</Text>
+                </View>
+              ))}
             </View>
-            <Button primary title="Start sequence" onPress={begin} />
-          </Reveal>
+          </GameBrief>
         ) : (
           <View style={styles.playfield}>
             <View style={styles.hud}>
@@ -148,13 +142,11 @@ export default function SequenceScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   page: { flexGrow: 1, justifyContent: 'flex-start', alignItems: 'center', padding: space.page },
-  playfield: { width: '100%', maxWidth: space.maxBoard, gap: space.page },
-  intro: { padding: space.page, gap: space.md, backgroundColor: colors.violet, borderRadius: space.card },
+  playfield: { flexGrow: 1, justifyContent: 'center', width: '100%', maxWidth: space.maxBoard, gap: space.page },
   footer: { flexDirection: 'row', justifyContent: 'space-between', padding: space.md, backgroundColor: colors.surface, borderRadius: space.radius },
-  demo: { flexDirection: 'row', gap: space.xs },
-  demoTile: { width: 48, height: 48, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center' },
+  demo: { width: '76%', maxWidth: 248, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.xs },
+  demoTile: { aspectRatio: 1, borderRadius: space.radius, borderWidth: space.hairline, borderColor: colors.arcadeViolet, alignItems: 'center', justifyContent: 'center' },
   demoGlyph: { fontSize: 24 },
-  title: { ...type.heading, color: colors.text },
   body: { color: colors.muted, fontSize: 15, lineHeight: 22 },
   hud: { flexDirection: 'row', gap: space.page, alignItems: 'center' },
   label: { ...type.label, color: colors.muted },

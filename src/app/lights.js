@@ -1,12 +1,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
 import Pause from '../components/Pause';
 import PlayTimer from '../components/PlayTimer';
 import ResultModal from '../components/ResultModal';
-import Reveal from '../components/Reveal';
+import GameBrief from '../components/GameBrief';
+import ArcadeArt from '../components/ArcadeArt';
+import { getBest } from '../storage';
 import { useFeedback } from '../feedback';
 import { readDifficulty } from '../difficulty';
 import { formatTime, gameLabels } from '../format';
@@ -19,6 +21,8 @@ export default function LightsScreen() {
   const { difficulty: requested } = useLocalSearchParams();
   const difficulty = readDifficulty(requested);
   const game = `lights-${difficulty}`;
+  const [best, setBest] = useState(null);
+  useEffect(() => { getBest(game).then(setBest).catch(() => {}); }, [game]);
   const [round, dispatch] = useReducer(lightsReducer, null);
   const { bump, pulse } = useGamePulse();
   const [lastTap, setLastTap] = useState(null);
@@ -55,16 +59,11 @@ export default function LightsScreen() {
       <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
         {!round ? (
-          <Reveal style={styles.intro}>
-            <Text style={styles.label}>{difficulty} · {size} × {size}</Text>
-            <View style={styles.preview} accessible={false}>
-              {[false, true, false, true, true, true, false, true, false].map((on, index) =>
-                <View key={index} style={[styles.previewTile, on && styles.previewOn]} />)}
-            </View>
-            <Text accessibilityRole="header" style={styles.heading}>Switch off every light</Text>
-            <Text style={styles.body}>A tap flips its tile and the four tiles beside it. Use as few moves as you can.</Text>
-            <Button primary title="Start puzzle" onPress={begin} />
-          </Reveal>
+          <GameBrief kicker={`${difficulty} · ${size} × ${size}`} title="Switch off every light" tone={colors.amber}
+            detail="Tap a tile to flip it and its neighbors above, below, left, and right. Use as few moves as you can."
+            best={best == null ? '—' : `${best} moves`} startLabel="Start puzzle" onStart={begin}>
+            <ArcadeArt game="lights" size={188} card />
+          </GameBrief>
         ) : (
           <View style={[styles.play, { width: cell * size + (size - 1) * space.sm }]}>
             <View style={styles.hud}>
@@ -104,13 +103,8 @@ export default function LightsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   page: { flexGrow: 1, justifyContent: 'flex-start', alignItems: 'center', padding: space.page },
-  intro: { width: '100%', maxWidth: space.maxBoard, gap: space.page },
-  heading: { ...type.heading, color: colors.text },
   body: { color: colors.muted, lineHeight: 22, fontSize: 15 },
-  preview: { width: 120, padding: 12, gap: 6, borderRadius: space.card, backgroundColor: colors.amber, flexDirection: 'row', flexWrap: 'wrap' },
-  previewTile: { width: 28, height: 28, borderRadius: 6, backgroundColor: colors.paper },
-  previewOn: { backgroundColor: colors.amberInk },
-  play: { gap: space.md },
+  play: { flexGrow: 1, justifyContent: 'center', gap: space.md },
   hud: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   label: { ...type.label, color: colors.muted },
   metric: { ...type.number, fontSize: 26, color: colors.text },

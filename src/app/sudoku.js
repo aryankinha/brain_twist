@@ -155,8 +155,8 @@ export default function SudokuScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  page: { padding: space.page, alignItems: 'center', gap: space.md },
-  stats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.xs },
+  page: { flexGrow: 1, justifyContent: 'center', padding: space.page, alignItems: 'center', gap: space.md },
+  stats: { backgroundColor: colors.violet, borderRadius: space.radius, padding: space.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.xs },
   stat: { ...type.number, fontSize: 25, color: colors.text },
   label: { ...type.label, color: colors.muted },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

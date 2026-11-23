@@ -9,7 +9,7 @@ const art = {
   stroop: { tiles: ['R', 'B', 'G', 'Y'], fill: colors.arcadePink },
 };
 
-export default function ArcadeArt({ game, size = 76, card = false }) {
+export default function ArcadeArt({ game, size = 76, card = false, highlight = true }) {
   const { tiles, fill, target } = art[game] ?? art.sudoku;
   const columns = tiles.length === 4 ? 2 : 3;
   const gap = 3;
@@ -20,7 +20,7 @@ export default function ArcadeArt({ game, size = 76, card = false }) {
       {tiles.map((tile, index) => (
         <View key={index} style={[
           styles.tile, { width: cell, height: cell, backgroundColor: tile ? (card ? colors.paper : fill) : colors.arcadeLine },
-          index === target && styles.target,
+          highlight && index === target && styles.target,
         ]}>
           <Text allowFontScaling={false} style={[styles.tileText, { fontSize: columns === 2 ? cell * 0.46 : cell * 0.57 }]}>{tile}</Text>
         </View>

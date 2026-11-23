@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../components/Button';
-import Reveal from '../components/Reveal';
+import GameBrief from '../components/GameBrief';
+import { getBest } from '../storage';
 import Pause from '../components/Pause';
 import { useFeedback } from '../feedback';
 import { useGamePulse } from '../use-game-pulse';
@@ -26,6 +27,8 @@ export default function StroopScreen() {
   const start = useRef(0);
   const current = useRef(null);
   const answers = useRef([]);
+  const [best, setBest] = useState(null);
+  useEffect(() => { getBest('stroop').then(setBest).catch(() => {}); }, []);
   const [trial, setTrial] = useState(null);
   const [remaining, setRemaining] = useState(ROUND_MS / 1000);
   const [result, setResult] = useState(null);
@@ -108,13 +111,14 @@ export default function StroopScreen() {
     <SafeAreaView style={styles.screen} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.page}>
         {!trial ? (
-          <Reveal style={[styles.content, styles.intro]}>
-            <Text style={styles.label}>30-second sprint</Text>
-            <Text accessibilityRole="header" style={styles.introTitle}>Match the ink</Text>
+          <GameBrief kicker="30-second sprint" title="Match the ink" tone={colors.peach}
+            detail="Choose the ink color. In this example, the answer is red." best={best == null ? '—' : `${best} points`}
+            startLabel="Start" onStart={begin}>
             <Text style={styles.demo}>BLUE</Text>
-            <Text style={styles.instruction}>The ink is red. Tap the matching color.</Text>
-            <Button primary title="Start" onPress={begin} />
-          </Reveal>
+            <View style={styles.demoColors}>
+              {colorNames.map((color) => <View key={color} style={[styles.demoSwatch, { backgroundColor: stroopColors[color] }]} />)}
+            </View>
+          </GameBrief>
         ) : (
           <View style={[styles.content, styles.playfield]}>
             <View style={styles.hud}>
@@ -168,16 +172,15 @@ const styles = StyleSheet.create({
   page: { flexGrow: 1, padding: space.page, alignItems: 'center' },
   content: { width: '100%', maxWidth: space.maxBoard, gap: space.md },
   playfield: { flexGrow: 1, paddingBottom: space.sm },
-  intro: { backgroundColor: colors.peach, padding: space.lg, borderRadius: space.card },
-  introTitle: { ...type.heading, color: colors.peachInk },
-  demo: { ...type.display, color: stroopInk.RED, backgroundColor: colors.paper, textAlign: 'center', padding: space.md },
+  demo: { ...type.display, color: stroopInk.RED, backgroundColor: colors.paper, borderRadius: space.radius, textAlign: 'center', padding: space.md, width: '86%' },
+  demoColors: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
+  demoSwatch: { width: 28, height: 28, borderRadius: space.sm },
   label: { ...type.label, color: colors.muted },
   hud: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.xs },
   metric: { ...type.number, fontSize: 25, color: colors.text },
-  instruction: { color: colors.peachInk, fontSize: 16, lineHeight: 23 },
   track: { backgroundColor: colors.tint, height: space.sm, borderRadius: space.sm, overflow: 'hidden' },
   fill: { height: '100%', backgroundColor: colors.accent, borderRadius: space.sm },
-  prompt: { flexGrow: 1, minHeight: 170, maxHeight: 400, justifyContent: 'center', backgroundColor: colors.arcadeWhite, borderWidth: space.hairline, borderColor: colors.arcadeViolet, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
+  prompt: { flexGrow: 1, minHeight: 170, justifyContent: 'center', backgroundColor: colors.arcadeWhite, borderWidth: space.hairline, borderColor: colors.arcadeViolet, borderRadius: space.card, paddingHorizontal: space.md, paddingVertical: space.page, gap: space.sm },
   promptLabel: { color: colors.muted, textAlign: 'center', fontWeight: '700' },
   warning: { color: colors.error },
   urgent: { backgroundColor: colors.error },
