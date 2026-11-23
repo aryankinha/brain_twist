@@ -72,11 +72,11 @@ export default function GamesScreen() {
         <View style={styles.top}>
           <View style={styles.brand}>
             <View style={styles.logo} accessible={false}><Text style={styles.logoText}>B</Text></View>
-            <Text style={styles.wordmark}>Brain Games</Text>
+            <Text style={styles.wordmark}>Brain Twist</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.profile}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={({ pressed }) => [styles.profile, pressed && styles.profilePressed]}>
             <Text numberOfLines={1} style={styles.player}>{profile.name}</Text>
-            <Text accessible={false} style={styles.settings}>⚙</Text>
+            <View style={styles.settingsButton}><Text accessible={false} style={styles.settings}>⚙</Text></View>
           </Pressable>
         </View>
         <View style={styles.stats}>
@@ -161,12 +161,14 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: 540, alignSelf: 'center', padding: space.page, gap: space.sm },
   top: { minHeight: space.tap, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1 },
-  logo: { width: 32, height: 32, backgroundColor: colors.arcade, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 32, height: 32, backgroundColor: colors.arcade, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   logoText: { color: colors.arcadeLime, fontWeight: '900', fontSize: 18 },
   wordmark: { color: colors.arcade, fontSize: 17, fontWeight: '900', flexShrink: 1 },
   profile: { minHeight: space.tap, maxWidth: '44%', flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.sm },
   player: { color: colors.muted, flexShrink: 1, fontWeight: '700' },
-  settings: { color: colors.arcade, fontSize: 22 },
+  profilePressed: { opacity: 0.65 },
+  settingsButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  settings: { color: colors.arcade, fontSize: 18 },
   stats: { flexDirection: 'row', gap: space.sm },
   stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.surface, borderRadius: space.radius, paddingVertical: space.sm, paddingHorizontal: space.md },
   statText: { color: colors.arcade, fontWeight: '800', fontSize: 13, flexShrink: 1 },

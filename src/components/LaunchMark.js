@@ -31,7 +31,7 @@ export default function LaunchMark() {
   }, [values]);
 
   return (
-    <View accessibilityLabel="Loading Brain Games" accessibilityRole="progressbar" style={styles.screen}>
+    <View accessibilityLabel="Loading Brain Twist" accessibilityRole="progressbar" style={styles.screen}>
       <StatusBar style="light" />
       <View style={styles.grid} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {marks.map(([glyph, fill], index) => (
@@ -43,7 +43,7 @@ export default function LaunchMark() {
           </Animated.View>
         ))}
       </View>
-      <Text style={styles.brand}>Brain Games</Text>
+      <Text style={styles.brand}>Brain Twist</Text>
       <Text style={styles.loading}>Loading games</Text>
     </View>
   );
