@@ -78,9 +78,9 @@ export default function SchulteScreen() {
       <ScrollView contentContainerStyle={styles.page}>
         {numbers.length === 0 ? (
           <GameBrief kicker={`${difficulty} · Visual search`} title={`Find 01–${total}`} tone={colors.lime}
-            detail={cue === 'target' ? 'Tap the numbers in order. The next number is highlighted.' : cue === 'groups' ? 'Tap the numbers in order. Color groups mark every five numbers.' : 'Find every number in order. All numbers look alike.'}
+            detail={cue === 'groups' ? 'Tap the numbers in order. Color groups mark every five numbers.' : 'Find every number in order. All numbers look alike.'}
             best={best == null ? '—' : formatTime(best, true)} startLabel="Start" onStart={begin}>
-            <ArcadeArt game="schulte" size={188} card highlight={cue === 'target'} />
+            <ArcadeArt game="schulte" size={188} card highlight={false} />
           </GameBrief>
         ) : (
           <View style={styles.content}>
@@ -102,7 +102,7 @@ export default function SchulteScreen() {
                     accessibilityState={{ disabled: number < target }}
                     disabled={number < target}
                     onPress={() => tap(number)}
-                    style={({ pressed }) => [styles.cell, cue === 'target' && number === target && styles.targetCell, number < target && styles.found, wrong === number && styles.wrong, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.cell, number < target && styles.found, wrong === number && styles.wrong, pressed && styles.pressed]}
                   >
                     <Text style={[styles.number, cue === 'groups' && { color: groupInks[(Math.ceil(number / 5) - 1) % groupInks.length] }, number < target && styles.foundText]}>{number < target ? '✓' : wrong === number ? `${number} ×` : number}</Text>
                   </Pressable>
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   slot: { aspectRatio: 1, padding: space.line },
   cell: { flex: 1, backgroundColor: colors.paper, borderRadius: space.md, alignItems: 'center', justifyContent: 'center', borderWidth: space.hairline, borderColor: colors.border },
-  targetCell: { backgroundColor: colors.arcadeLime, borderColor: colors.limeInk, borderWidth: space.line },
   found: { backgroundColor: colors.correct, borderColor: colors.correct },
   foundText: { color: colors.limeInk },
   number: { color: colors.text, fontSize: 20, fontWeight: '600' },

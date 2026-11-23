@@ -1,6 +1,6 @@
 export const schulteLevels = {
-  easy: { size: 5, cue: 'target' },
-  medium: { size: 5, cue: 'groups' },
+  easy: { size: 5, cue: 'groups' },
+  medium: { size: 5, cue: 'none' },
   hard: { size: 6, cue: 'none' },
 };
 
