@@ -1,14 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import {
-  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View,
+  KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ping } from './api';
-import BrainMark from './components/BrainMark';
+import LaunchMark from './components/LaunchMark';
 import Reveal from './components/Reveal';
 import Button from './components/Button';
 import { loadProfile, saveProfile } from './storage';
-import { colors, space } from './theme';
+import { colors, space, type } from './theme';
 
 const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
@@ -62,15 +62,8 @@ export function UserProvider({ children }) {
   const close = () => { if (profile && !saving) setEditing(false); };
   return (
     <UserContext.Provider value={{ profile, editName }}>
-      {profile ? children : (
+      {profile ? children : loading ? <LaunchMark /> : (
         <View style={styles.center}>
-          {loading && (
-            <Reveal style={styles.loading}>
-              <View style={styles.mark}><BrainMark size={120} /></View>
-              <Text accessibilityRole="header" style={styles.loadingTitle}>Brain Games</Text>
-              <ActivityIndicator accessibilityLabel="Loading profile" color={colors.accent} />
-            </Reveal>
-          )}
           {loadError && (
             <Button title="Retry loading profile" onPress={() => {
               setLoading(true);
@@ -87,7 +80,7 @@ export function UserProvider({ children }) {
         <SafeAreaView style={styles.screen}>
           <KeyboardAvoidingView style={styles.center} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Reveal style={styles.form}>
-              <View style={styles.mark}><BrainMark size={72} /></View>
+              <View style={styles.mark}><Text style={styles.markText}>B</Text></View>
               <Text accessibilityRole="header" style={styles.title}>{profile ? 'Edit name' : 'Enter your name'}</Text>
               <TextInput
                 accessibilityLabel="Name"
@@ -115,9 +108,8 @@ export function UserProvider({ children }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.background, padding: space.lg },
-  loading: { alignItems: 'center', gap: space.page },
-  loadingTitle: { color: colors.text, fontSize: 34, fontWeight: '800' },
-  mark: { alignSelf: 'center', borderRadius: space.card, padding: space.md, backgroundColor: colors.hero },
+  mark: { alignSelf: 'center', borderRadius: space.card, padding: space.md, backgroundColor: colors.arcadeViolet },
+  markText: { ...type.heading, color: colors.arcade },
   form: { width: '100%', maxWidth: space.maxBoard, alignSelf: 'center', gap: space.md },
   title: { fontSize: 24, fontWeight: '700', color: colors.text },
   input: { minHeight: space.tap, padding: space.md, borderRadius: space.radius, backgroundColor: colors.paper, borderWidth: space.hairline, borderColor: colors.border, color: colors.text },

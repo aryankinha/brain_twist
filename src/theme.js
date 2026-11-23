@@ -17,6 +17,15 @@ export const colors = {
   limeInk: '#294420',
   peach: '#FFE8DD',
   peachInk: '#7B3522',
+  arcade: '#222238',
+  arcadeLine: '#434363',
+  arcadeLime: '#D6FA55',
+  arcadeViolet: '#BEAAFF',
+  arcadePink: '#FFB5D1',
+  arcadeBlue: '#A8DEFF',
+  arcadeAmber: '#FFD66E',
+  arcadeWhite: '#F3EEFF',
+  arcadeShade: '#514285',
   surface: '#F6F8F7',
   violet: '#F0EAFF',
   violetInk: '#543399',
@@ -67,5 +76,5 @@ export const type = {
   display: { fontSize: 52, fontWeight: '900', letterSpacing: -2 },
 };
 
-export const motion = { press: 0.965, release: 145, enter: 220, feedback: 180, shake: 42 };
+export const motion = { press: 0.965, release: 145, enter: 220, feedback: 180, shake: 42, launch: 580, tileStep: 58 };
 export const elevation = { action: 3 };
