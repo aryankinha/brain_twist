@@ -1,8 +1,9 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Avatar from '../../components/Avatar';
 import Button from '../../components/Button';
+import { PrototypeSwitcher, VariantA, VariantB, VariantC } from '../../components/LeaderboardPrototype';
 import LeaderboardProfile from '../../components/LeaderboardProfile';
 import Reveal from '../../components/Reveal';
 import { getLeaderboard, getLeaderboardRevision } from '../../api';
@@ -19,6 +20,11 @@ const periods = [['day', 'Daily'], ['week', 'Weekly'], ['all', 'All time']];
 const defaultData = { entries: [], you: null, ranked: 0, endsAt: null };
 const medals = [colors.amber, colors.sky, colors.peach];
 const maxWidth = 850;
+const variants = { A: VariantA, B: VariantB, C: VariantC };
+
+function changeVariant(variant) {
+  router.setParams({ variant });
+}
 
 function resultLabel(entry, game) {
   return game === 'overall' ? `${entry.total} pts` : formatScore(game, entry.value);
@@ -62,6 +68,9 @@ function Podium({ entries, game, ownAvatar, onPlayer }) {
 
 export default function LeaderboardScreen() {
   const { profile } = useUser();
+  const { variant } = useLocalSearchParams();
+  const variantKey = typeof variant === 'string' && Object.hasOwn(variants, variant) ? variant : 'A';
+  const Prototype = __DEV__ ? variants[variantKey] : null;
   const { userId, avatarId } = profile;
   const [game, setGame] = useState('overall');
   const [period, setPeriod] = useState('week');
@@ -138,65 +147,89 @@ export default function LeaderboardScreen() {
     ? 'Each game has equal weight.'
     : { points: 'Highest score wins', rounds: 'Most rounds wins', moves: 'Fewest moves wins', time: 'Fastest time wins' }[scoreUnit(game)];
 
+  const controls = (
+    <>
+      <View style={styles.periods}>
+        {periods.map(([id, label]) => (
+          <Button key={id} title={label} selected={id === period} style={styles.filter}
+            onPress={() => changeFilter(setPeriod, id, period)} />
+        ))}
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {tabs.map(([id, name]) => (
+          <Button key={id} title={name} selected={id === group}
+            onPress={() => { if (id !== group) changeFilter(setGame, id === 'overall' ? id : levelKey(id, 'easy'), game); }} />
+        ))}
+      </ScrollView>
+      {!overall && group !== 'stroop' && <View style={styles.levels}>
+        {levels.map((level) => <Button key={level} title={level[0].toUpperCase() + level.slice(1)}
+          selected={game === levelKey(group, level)} style={styles.filter}
+          onPress={() => changeFilter(setGame, levelKey(group, level), game)} />)}
+      </View>}
+      <Text style={styles.periodInfo}>{period === 'day' ? 'Resets at midnight UTC · compared with yesterday' : period === 'week' ? 'Resets Monday UTC · compared with last week' : 'Movement since Monday UTC'}</Text>
+    </>
+  );
+  const status = (
+    <>
+      {loading && !refreshing && <ActivityIndicator style={styles.message} color={colors.accent} accessibilityLabel="Loading standings" />}
+      {failure && <View style={styles.message}>
+        <Text style={styles.muted}>{failure === 'offline' ? 'Connection unavailable.' : 'Could not load standings.'} {hasData ? 'Showing the last loaded standings.' : ''}</Text>
+        <Button title="Retry" onPress={() => load(true)} />
+      </View>}
+      {!loading && !failure && !data.entries.length && <View style={styles.message}>
+        <Text accessibilityRole="header" style={styles.section}>No ranked scores yet</Text>
+        <Text style={styles.muted}>Finish a round to enter this board.</Text>
+      </View>}
+    </>
+  );
+  const listBar = (
+    <>
+      {hasData && !failure && (
+        <View style={styles.listBar}>
+          {data.entries.length > 3 && <Text accessibilityRole="header" style={styles.section}>Standings</Text>}
+          <Button title="Refresh standings" style={styles.refreshButton} onPress={() => load(true)} />
+        </View>
+      )}
+    </>
+  );
+  const model = {
+    title, hint: boardHint, entries: data.entries, ownAvatar: avatarId, onPlayer: setPlayer,
+    label: (entry) => playerLabel(entry, game),
+    value: (entry) => resultLabel(entry, game),
+    movement: (amount) => <Movement amount={amount} />,
+  };
+
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, Prototype && styles.prototypeShelf]}>
       <FlatList
         contentContainerStyle={styles.list}
         data={data.entries.slice(3)}
         keyExtractor={(entry) => entry.key}
-        ListHeaderComponent={
-          <>
+        ListHeaderComponent={Prototype
+          ? <Prototype key={variantKey} model={model} controls={controls} status={status} listBar={listBar} />
+          : <>
             <View style={styles.banner}>
               <Text style={styles.bannerLabel}>BRAIN TWIST RANKED</Text>
               <Text accessibilityRole="header" style={styles.title}>{title}</Text>
               <Text style={styles.bannerDetail}>{boardHint}</Text>
             </View>
-            <View style={styles.periods}>
-              {periods.map(([id, label]) => (
-                <Button key={id} title={label} selected={id === period} style={styles.filter}
-                  onPress={() => changeFilter(setPeriod, id, period)} />
-              ))}
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {tabs.map(([id, name]) => (
-                <Button key={id} title={name} selected={id === group}
-                  onPress={() => { if (id !== group) changeFilter(setGame, id === 'overall' ? id : levelKey(id, 'easy'), game); }} />
-              ))}
-            </ScrollView>
-            {!overall && group !== 'stroop' && <View style={styles.levels}>
-              {levels.map((level) => <Button key={level} title={level[0].toUpperCase() + level.slice(1)}
-                selected={game === levelKey(group, level)} style={styles.filter}
-                onPress={() => changeFilter(setGame, levelKey(group, level), game)} />)}
-            </View>}
-            <Text style={styles.periodInfo}>{period === 'day' ? 'Resets at midnight UTC · compared with yesterday' : period === 'week' ? 'Resets Monday UTC · compared with last week' : 'Movement since Monday UTC'}</Text>
-            {loading && !refreshing && <ActivityIndicator style={styles.message} color={colors.accent} accessibilityLabel="Loading standings" />}
-            {failure && <View style={styles.message}>
-              <Text style={styles.muted}>{failure === 'offline' ? 'Connection unavailable.' : 'Could not load standings.'} {hasData ? 'Showing the last loaded standings.' : ''}</Text>
-              <Button title="Retry" onPress={() => load(true)} />
-            </View>}
-            {!loading && !failure && !data.entries.length && <View style={styles.message}>
-              <Text accessibilityRole="header" style={styles.section}>No ranked scores yet</Text>
-              <Text style={styles.muted}>Finish a round to enter this board.</Text>
-            </View>}
+            {controls}
+            {status}
             <Podium entries={data.entries} game={game} ownAvatar={avatarId} onPlayer={setPlayer} />
-            {hasData && !failure && (
-              <View style={styles.listBar}>
-                {data.entries.length > 3 && <Text accessibilityRole="header" style={styles.section}>Standings</Text>}
-                <Button title="Refresh standings" style={styles.refreshButton} onPress={() => load(true)} />
-              </View>
-            )}
+            {listBar}
           </>
         }
         renderItem={({ item }) => (
           <Pressable accessibilityRole="button" accessibilityLabel={playerLabel(item, game)}
-            onPress={() => setPlayer(item)} style={({ pressed }) => [styles.row, item.isYou && styles.ownRow, pressed && styles.pressed]}>
+            onPress={() => setPlayer(item)} style={({ pressed }) => [styles.row, Prototype && styles.compactRow, item.isYou && styles.ownRow, pressed && styles.pressed]}>
             <Text style={styles.rank}>#{item.rank}</Text>
             <Avatar id={item.isYou ? avatarId : item.avatarId} size={34} />
             <View style={styles.nameCell}>
               <Text numberOfLines={1} style={styles.name}>{item.name}{item.isYou ? ' (you)' : ''}</Text>
-              <Movement amount={item.movement} />
+              {(!Prototype || variantKey !== 'C') && <Movement amount={item.movement} />}
             </View>
             <Text style={styles.score}>{resultLabel(item, game)}</Text>
+            {Prototype && variantKey === 'C' && <View style={styles.tableMovement}><Movement amount={item.movement} /></View>}
           </Pressable>
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor={colors.accent} />}
@@ -214,6 +247,7 @@ export default function LeaderboardScreen() {
           </Pressable>
         </View>
       )}
+      {Prototype && <PrototypeSwitcher current={variantKey} onChange={changeVariant} paused={Boolean(player)} />}
       {player && <LeaderboardProfile key={player.key} entry={player} ownAvatar={avatarId} onClose={() => setPlayer(null)} />}
     </View>
   );
@@ -221,6 +255,7 @@ export default function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  prototypeShelf: { paddingBottom: space.tap + 2 * space.xs },
   list: { width: '100%', maxWidth, alignSelf: 'center', padding: space.page, flexGrow: 1 },
   banner: { backgroundColor: colors.arcade, borderRadius: space.card, padding: space.page, gap: space.xs },
   bannerLabel: { ...type.label, color: colors.arcadeLime },
@@ -243,6 +278,8 @@ const styles = StyleSheet.create({
   listBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm, marginTop: space.sm },
   refreshButton: { marginLeft: 'auto' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 60, padding: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  compactRow: { minHeight: 52, paddingVertical: space.xs },
+  tableMovement: { minWidth: space.xl, alignItems: 'flex-end' },
   ownRow: { backgroundColor: colors.tint },
   rank: { color: colors.accent, minWidth: space.xl, fontWeight: '900', fontVariant: ['tabular-nums'] },
   nameCell: { flex: 1, gap: 2 },
