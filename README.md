@@ -62,8 +62,8 @@ ExpoApp/
 
 ### Prerequisites
 
-- **Node.js** ≥ 20.0.0
-- **npm** (or bun/yarn)
+- **Node.js 24 LTS** (the version used in CI)
+- **npm**
 - **Expo Go** app on iOS/Android or a physical/simulator development build
 
 ---
@@ -73,7 +73,7 @@ ExpoApp/
 Install dependencies from the repository root:
 
 ```bash
-npm install
+npm ci
 ```
 
 Start the Expo development server:
@@ -110,7 +110,7 @@ The server can run completely isolated from the mobile client:
 
 ```bash
 cd server
-npm install
+npm ci
 npm start
 ```
 
@@ -128,14 +128,11 @@ curl http://localhost:10000/health
 
 ---
 
-### 3. Isolated Server with Docker
+### Browser and CI checks
 
-To run the server in a containerized environment:
+Run `npm run web` to open the browser preview. If the hosted API has yet to deploy the web-origin update, run the API locally and set `EXPO_PUBLIC_API_URL=http://localhost:10000` in the app’s `.env`. The API accepts browser requests from local loopback origins. For a deployed web preview, set the API’s `WEB_ORIGINS` to a comma-separated list of exact origins.
 
-```bash
-docker build -t brain-twist-server ./server
-docker run -d -p 10000:10000 -v "$(pwd)/server/data:/app/data" brain-twist-server
-```
+Run `npm ci --prefix server` once, then `npm run check` before pushing. GitHub Actions runs the same checks on every push and pull request.
 
 ---
 
