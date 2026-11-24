@@ -9,7 +9,8 @@ import Button from '../../components/Button';
 import DifficultyPicker from '../../components/DifficultyPicker';
 import Reveal from '../../components/Reveal';
 import { useFeedback } from '../../feedback';
-import { formatScore, gameLabels } from '../../format';
+import { levelKey, levels } from '../../difficulty';
+import { formatScore, gameLabels, scoreUnit } from '../../format';
 import { dailyGame, dayKey, dailyStreak } from '../../progress';
 import { getBest, loadDailyProgress } from '../../storage';
 import { colors, motion, space, type } from '../../theme';
@@ -23,6 +24,7 @@ const modes = [
   { key: 'stroop', title: 'Stroop', category: 'Speed', tone: colors.arcadePink },
 ];
 const categories = ['All', 'Logic', 'Focus', 'Memory', 'Speed'];
+const hardestFirst = [...levels].reverse();
 
 function openGame(key) {
   const separator = key.indexOf('-');
@@ -34,7 +36,8 @@ function openGame(key) {
 export default function GamesScreen() {
   const { profile } = useUser();
   const { width, fontScale } = useWindowDimensions();
-  const compactArt = width < 360 || fontScale >= 1.3;
+  const compactArt = width < 375 || fontScale >= 1.3;
+  const wide = width >= 840 && fontScale < 1.3;
   const { play, animate } = useFeedback();
   const [day, setDay] = useState(dayKey);
   const [daily, setDaily] = useState(null);
@@ -72,7 +75,7 @@ export default function GamesScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.page}>
+      <ScrollView contentContainerStyle={[styles.page, wide && styles.widePage]}>
         <View style={styles.top}>
           <View style={styles.brand}>
             <BrandMark />
@@ -83,52 +86,69 @@ export default function GamesScreen() {
             <Avatar id={profile.avatarId} size={34} />
           </Pressable>
         </View>
-        <View style={styles.stats}>
-          <View style={styles.stat}><Text style={styles.streakIcon}>↗</Text><Text style={styles.statText}>{streak} day streak</Text></View>
-          <View style={styles.stat}><Text style={styles.recordIcon}>◆</Text><Text style={styles.statText}>{recorded}/{Object.keys(gameLabels).length} records</Text></View>
-        </View>
-        <Reveal style={styles.feature}>
-          <View style={styles.featureCopy}>
-            <Text style={styles.featureLabel}>{completed ? '✓ Daily complete' : 'Daily challenge'}</Text>
-            <Text accessibilityRole="header" style={styles.featureTitle}>{gameLabels[featured]}</Text>
-            <Button title={completed ? 'Play again' : 'Play challenge'} onPress={() => { play('tap'); setDifficulty({ mode: featuredMode, fixedLevel: featured.split('-')[1] ?? 'easy' }); }} style={styles.featureButton} />
-            {completed && <Text style={styles.dailyBest}>Today  {formatScore(featured, daily.value)}</Text>}
-          </View>
-          <View style={[styles.featureArt, compactArt && styles.compactArt]}>
-            <View style={[styles.orbit, compactArt && styles.compactOrbit]} />
-            <ArcadeArt game={featuredMode.key} size={compactArt ? 64 : 92} />
-            <Text accessible={false} style={styles.spark}>✦</Text>
-          </View>
-        </Reveal>
-        <View style={styles.sectionRow}>
-          <Text accessibilityRole="header" style={styles.section}>Game room</Text>
-          <Text style={styles.gameCount}>{modes.length} games</Text>
-        </View>
-        <View style={styles.filters}>
-          {categories.map((item) => (
-            <Pressable key={item} accessibilityRole="button" accessibilityLabel={`Filter ${item}`}
-              accessibilityState={{ selected: category === item }} onPress={() => setCategory(item)}
-              style={[styles.filter, category === item && styles.filterSelected]}>
-              <Text style={[styles.filterText, category === item && styles.filterSelectedText]}>{item}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.catalog}>
-          {modes.filter((mode) => category === 'All' || mode.category === category).map((mode) => (
-            <Pressable key={mode.key} accessibilityRole="button"
-              accessibilityLabel={mode.levels ? `${mode.title} levels` : `Play ${mode.title}`}
-              onPress={() => { play('tap'); setDifficulty({ mode, fixedLevel: null }); }}
-              style={({ pressed }) => [styles.mode, mode.key === 'stroop' && styles.wideMode, pressed && styles.pressed, pressed && animate && styles.compress]}>
-              <View style={[styles.modeArt, mode.key === 'stroop' && styles.wideArt, { backgroundColor: mode.tone }]}>
-                <ArcadeArt game={mode.key} size={54} card />
+        <View style={[styles.lobby, wide && styles.wideLobby]}>
+          <View style={[styles.dailyColumn, wide && styles.sidebar]}>
+            <Reveal style={styles.feature}>
+              <View style={styles.featureCopy}>
+                <Text style={styles.featureLabel}>{completed ? '✓  Daily complete' : 'Daily challenge'}</Text>
+                <Text accessibilityRole="header" style={styles.featureTitle}>{gameLabels[featured]}</Text>
+                {completed && <Text style={styles.dailyBest}>Today’s best · {formatScore(featured, daily.value)}</Text>}
+                <Button title={completed ? 'Play again' : 'Play challenge'} onPress={() => { play('tap'); setDifficulty({ mode: featuredMode, fixedLevel: featured.split('-')[1] ?? 'easy' }); }} style={styles.featureButton} />
               </View>
-              <View style={styles.modeCopy}>
-                <Text style={styles.modeTitle}>{mode.title}</Text>
-                <Text style={styles.modeDetail}>{mode.levels ? '3 difficulties' : bests[mode.key] == null ? mode.category : `Best ${formatScore(mode.key, bests[mode.key])}`}</Text>
+              <View style={[styles.featureArt, compactArt && styles.compactArt]}>
+                <View style={[styles.orbit, compactArt && styles.compactOrbit]} />
+                <View style={[styles.orbit, styles.orbitInner, compactArt && styles.compactInner]} />
+                <ArcadeArt game={featuredMode.key} size={compactArt ? 64 : 92} />
+                <Text accessible={false} style={styles.spark}>✦</Text>
               </View>
-              <Text style={[styles.arrow, mode.key === 'stroop' && styles.wideArrow]} accessible={false}>↗</Text>
-            </Pressable>
-          ))}
+            </Reveal>
+            <View style={styles.stats}>
+              <View style={styles.stat}><Text style={styles.statNumber}>{streak}</Text><Text style={styles.statText}>Daily streak</Text></View>
+              <View style={styles.stat}><Text style={styles.statNumber}>{recorded}<Text style={styles.statTotal}>/{Object.keys(gameLabels).length}</Text></Text><Text style={styles.statText}>Personal records</Text></View>
+            </View>
+          </View>
+          <View style={styles.gamesColumn}>
+            <Text accessibilityRole="header" style={styles.section}>Game room</Text>
+            <View style={styles.filters}>
+              {categories.map((item) => (
+                <Pressable key={item} accessibilityRole="button" accessibilityLabel={`Filter ${item}`}
+                  accessibilityState={{ selected: category === item }} onPress={() => setCategory(item)}
+                  style={[styles.filter, width < 360 && styles.compactFilter, category === item && styles.filterSelected]}>
+                  <Text style={[styles.filterText, category === item && styles.filterSelectedText]}>{item}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.catalog}>
+              {modes.filter((mode) => category === 'All' || mode.category === category).map((mode) => {
+                const recordLevel = mode.levels ? hardestFirst.find((level) => bests[levelKey(mode.key, level)] != null) : null;
+                const recordKey = levelKey(mode.key, recordLevel ?? 'easy');
+                const value = bests[recordKey];
+                const unit = scoreUnit(recordKey);
+                const record = value == null ? null : `${formatScore(recordKey, value)}${unit === 'time' ? '' : ` ${unit === 'points' ? 'pts' : unit}`}`;
+                const label = mode.levels ? `${mode.title} levels` : `Play ${mode.title}`;
+                return (
+                  <Pressable key={mode.key} accessibilityRole="button"
+                    accessibilityLabel={label} accessibilityHint={record ? `Personal best ${record}${recordLevel ? ` on ${recordLevel}` : ''}` : undefined}
+                    onPress={() => { play('tap'); setDifficulty({ mode, fixedLevel: null }); }}
+                    style={({ pressed }) => [styles.mode, pressed && styles.pressed, pressed && animate && styles.compress]}>
+                    <View accessible={false} style={[styles.modeArt, { backgroundColor: mode.tone }]}>
+                      <ArcadeArt game={mode.key} size={39} card />
+                    </View>
+                    <View style={styles.modeCopy}>
+                      <Text style={styles.modeTitle}>{mode.title}</Text>
+                      <Text style={styles.modeDetail}>{mode.category}{mode.levels ? ' · 3 levels' : ' · 30 sec'}</Text>
+                      {record && fontScale >= 1.3 && <Text style={styles.modeDetail}>Best{recordLevel ? ` · ${recordLevel}` : ''} · {record}</Text>}
+                    </View>
+                    {record && fontScale < 1.3 && <View style={styles.record} accessible={false}>
+                      <Text style={styles.recordValue}>{record}</Text>
+                      <Text style={styles.modeDetail}>{recordLevel ? `Best · ${recordLevel}` : 'Best'}</Text>
+                    </View>}
+                    <Text style={styles.arrow} accessible={false}>›</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
         </View>
       </ScrollView>
       {difficulty && (
@@ -141,19 +161,25 @@ export default function GamesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  page: { width: '100%', maxWidth: 540, alignSelf: 'center', padding: space.page, gap: space.sm },
+  page: { width: '100%', maxWidth: 580, alignSelf: 'center', padding: space.page, gap: space.md },
+  widePage: { maxWidth: 980, paddingHorizontal: space.xl },
+  lobby: { gap: space.md },
+  wideLobby: { flexDirection: 'row', gap: space.xl, alignItems: 'flex-start' },
+  dailyColumn: { gap: space.md },
+  sidebar: { width: '39%' },
+  gamesColumn: { flex: 1, minWidth: 0, gap: space.md },
   top: { minHeight: space.tap, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
   brand: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1, flexBasis: 0, flexGrow: 1 },
   wordmark: { color: colors.arcade, fontSize: 17, fontWeight: '900', flexShrink: 1 },
   profile: { minHeight: space.tap, maxWidth: '44%', flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingLeft: space.sm },
   player: { color: colors.muted, flexShrink: 1, fontWeight: '700' },
   profilePressed: { opacity: 0.65 },
-  stats: { flexDirection: 'row', gap: space.sm },
-  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.surface, borderRadius: space.radius, paddingVertical: space.sm, paddingHorizontal: space.md },
-  statText: { color: colors.arcade, fontWeight: '800', fontSize: 13, flexShrink: 1 },
-  streakIcon: { color: colors.accent, fontWeight: '900', fontSize: 16 },
-  recordIcon: { color: colors.violetInk, fontWeight: '900', fontSize: 14 },
-  feature: { flexDirection: 'row', alignItems: 'center', gap: space.sm, overflow: 'hidden', backgroundColor: colors.arcade, borderRadius: space.card, marginTop: space.xs, padding: space.page },
+  stats: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  stat: { flex: 1, paddingVertical: space.xs, paddingBottom: space.md },
+  statText: { color: colors.muted, fontWeight: '700', fontSize: 12 },
+  statNumber: { color: colors.arcade, fontSize: 23, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  statTotal: { color: colors.muted, fontSize: 14, fontWeight: '700' },
+  feature: { flexDirection: 'row', alignItems: 'center', gap: space.sm, overflow: 'hidden', backgroundColor: colors.arcade, borderRadius: space.card, padding: space.page },
   featureCopy: { flex: 1, gap: space.sm },
   featureLabel: { ...type.label, color: colors.arcadeLime, letterSpacing: 1.15 },
   featureTitle: { ...type.heading, color: colors.paper, fontSize: 30 },
@@ -163,25 +189,25 @@ const styles = StyleSheet.create({
   compactArt: { width: 72, minHeight: 78 },
   orbit: { position: 'absolute', width: 135, height: 135, borderRadius: 68, borderWidth: space.line, borderColor: colors.arcadeLine },
   compactOrbit: { width: 92, height: 92, borderRadius: 46 },
+  orbitInner: { width: 112, height: 112, borderRadius: 56 },
+  compactInner: { width: 72, height: 72, borderRadius: 36 },
   spark: { position: 'absolute', top: 0, right: 0, color: colors.arcadeLime, fontSize: 24, textShadowColor: colors.arcade, textShadowRadius: 3 },
-  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: space.sm },
   section: { ...type.heading, fontSize: 24, color: colors.arcade },
-  gameCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
-  filter: { minHeight: 44, paddingHorizontal: space.sm, borderRadius: space.radius, borderWidth: space.hairline, borderColor: colors.border, justifyContent: 'center' },
-  filterSelected: { backgroundColor: colors.arcade, borderColor: colors.arcade },
-  filterText: { color: colors.text, fontWeight: '800', fontSize: 12 },
-  filterSelectedText: { color: colors.paper },
-  catalog: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'space-between' },
-  mode: { width: '48%', borderRadius: space.radius, overflow: 'hidden', backgroundColor: colors.surface, borderWidth: space.hairline, borderColor: colors.border },
-  wideMode: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
-  modeArt: { height: 67, alignItems: 'center', justifyContent: 'center' },
-  wideArt: { width: '43%' },
-  modeCopy: { paddingHorizontal: space.sm, paddingVertical: space.sm, gap: 2 },
-  modeTitle: { fontWeight: '900', fontSize: 15, color: colors.arcade },
+  filter: { minHeight: 44, paddingHorizontal: space.md, borderRadius: 22, justifyContent: 'center' },
+  compactFilter: { paddingHorizontal: space.sm },
+  filterSelected: { backgroundColor: colors.violet },
+  filterText: { color: colors.muted, fontWeight: '800', fontSize: 13 },
+  filterSelectedText: { color: colors.violetInk },
+  catalog: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  mode: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 67, paddingVertical: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  modeArt: { width: 49, height: 49, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center' },
+  modeCopy: { flex: 1, minWidth: 0, gap: 2 },
+  modeTitle: { fontWeight: '900', fontSize: 16, color: colors.arcade },
   modeDetail: { color: colors.muted, fontWeight: '700', fontSize: 12 },
-  arrow: { position: 'absolute', right: space.sm, top: space.xs, color: colors.arcade, fontSize: 17, fontWeight: '900' },
-  wideArrow: { top: space.sm },
+  record: { alignItems: 'flex-end', maxWidth: '35%' },
+  recordValue: { color: colors.arcade, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  arrow: { color: colors.violetInk, fontSize: 24, fontWeight: '700' },
   pressed: { opacity: 0.74 },
   compress: { transform: [{ scale: motion.press }] },
 });

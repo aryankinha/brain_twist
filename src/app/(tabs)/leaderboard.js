@@ -179,6 +179,10 @@ export default function LeaderboardScreen() {
       {!loading && !failure && !data.entries.length && <View style={styles.message}>
         <Text accessibilityRole="header" style={styles.section}>No ranked scores yet</Text>
         <Text style={styles.muted}>Finish a round to enter this board.</Text>
+        <Button primary title={overall ? 'Explore games' : `Play ${title}`} onPress={() => {
+          if (overall) router.navigate('/');
+          else router.push({ pathname: `/${group}`, params: { difficulty: game.split('-')[1] ?? 'easy' } });
+        }} />
       </View>}
     </>
   );
