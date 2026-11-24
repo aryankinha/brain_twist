@@ -30,11 +30,15 @@ export async function openStore(dir) {
         if (!isRecord(user) || typeof user.name !== 'string' || !isRecord(user.scores)) {
           throw new Error('Invalid user');
         }
-        for (const score of Object.values(user.scores)) {
-          if (!isRecord(score) || !Number.isInteger(score.value) || !Number.isSafeInteger(score.at)) {
-            throw new Error('Invalid score');
+        if (user.days !== undefined && !isRecord(user.days)) throw new Error('Invalid history');
+        for (const records of [user.scores, ...Object.values(user.days ?? {})]) {
+          if (!isRecord(records)) throw new Error('Invalid scores');
+          for (const score of Object.values(records)) {
+            if (!isRecord(score) || !Number.isInteger(score.value) || !Number.isSafeInteger(score.at)) {
+              throw new Error('Invalid score');
+            }
+            lastAt = Math.max(lastAt, score.at);
           }
-          lastAt = Math.max(lastAt, score.at);
         }
       }
       users = data.users;

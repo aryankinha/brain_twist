@@ -1,5 +1,6 @@
 import express from 'express';
 import { compare, gameRanking, overallRanking } from './rankings.js';
+import { dayRecords, playerProfile, standings, utcDay } from './standings.js';
 import { openStore } from './store.js';
 
 const games = {
@@ -17,6 +18,7 @@ const games = {
   'sequence-hard': { order: 'desc', min: 0, max: 100000 },
   stroop: { order: 'desc', min: 0, max: 200 },
 };
+const avatars = new Set(['orbit', 'pixel', 'comet', 'nova', 'bolt', 'echo']);
 const validUserId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(id);
 
 const store = await openStore(process.env.DATA_DIR || './data');
@@ -41,7 +43,7 @@ app.use(express.json({ limit: '1kb' }));
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.post('/scores', async (req, res) => {
-  const { userId, name, game, value } = req.body ?? {};
+  const { userId, name, game, value, avatarId } = req.body ?? {};
   const trimmedName = typeof name === 'string' ? name.trim() : '';
   if (!validUserId(userId)) return res.status(400).json({ error: 'Invalid userId' });
   if (!trimmedName || trimmedName.length > 20) {
@@ -56,12 +58,22 @@ app.post('/scores', async (req, res) => {
   }
 
   const result = await store.update((users, at) => {
-    const scores = Object.hasOwn(users, userId) ? users[userId].scores : {};
+    const user = Object.hasOwn(users, userId) ? users[userId] : { scores: {} };
+    const { scores } = user;
     const previous = scores[game];
     const improved = !previous || compare(order, value, previous.value) < 0;
     const nextScores = improved ? { ...scores, [game]: { value, at } } : scores;
+    const days = user.days ?? dayRecords(user, games);
+    const day = utcDay(at);
+    const dailyScores = days[day] ?? {};
+    const dailyBest = dailyScores[game];
+    const nextDays = !dailyBest || compare(order, value, dailyBest.value) < 0
+      ? { ...days, [day]: { ...dailyScores, [game]: { value, at } } } : days;
     return {
-      users: { ...users, [userId]: { name: trimmedName, scores: nextScores } },
+      users: { ...users, [userId]: {
+        name: trimmedName, avatarId: avatars.has(avatarId) ? avatarId : user.avatarId,
+        scores: nextScores, days: nextDays,
+      } },
       result: { game, best: nextScores[game].value, improved },
     };
   });
@@ -74,7 +86,21 @@ app.post('/scores', async (req, res) => {
   res.json(result);
 });
 
+function periodStandings(req, res, game) {
+  const { period, userId } = req.query;
+  if (typeof period !== 'string' || !['day', 'week', 'all'].includes(period)) {
+    return res.status(400).json({ error: 'Unknown period' });
+  }
+  return res.json(standings(store.users(), games, game, period, userId));
+}
+
+app.get('/players/:key', (req, res) => {
+  const profile = playerProfile(store.users(), games, req.params.key);
+  return profile ? res.json(profile) : res.status(404).json({ error: 'Player not found' });
+});
+
 app.get('/leaderboard/overall', (req, res) => {
+  if (req.query.period !== undefined) return periodStandings(req, res, 'overall');
   const rows = overallRanking(store.users(), games);
   const publicEntry = ({ id, ...row }) => ({ ...row, isYou: id === req.query.userId });
   const entries = rows.slice(0, 50).map(publicEntry);
@@ -85,6 +111,7 @@ app.get('/leaderboard/overall', (req, res) => {
 app.get('/leaderboard/:game', (req, res) => {
   const { game } = req.params;
   if (!Object.hasOwn(games, game)) return res.status(404).json({ error: 'Unknown game' });
+  if (req.query.period !== undefined) return periodStandings(req, res, game);
   const { order } = games[game];
   const entries = gameRanking(store.users(), game, order)
     .slice(0, 50)
