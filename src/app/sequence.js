@@ -3,6 +3,7 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Animated, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ResultModal from '../components/ResultModal';
+import SequenceMark from '../components/SequenceMark';
 import GameBrief from '../components/GameBrief';
 import { levelKey, readDifficulty } from '../difficulty';
 import { gameLabels } from '../format';
@@ -88,13 +89,7 @@ export default function SequenceScreen() {
           <GameBrief kicker={`${size} × ${size} · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
             detail="Repeat the flashes in order. Each round adds one shape." best={best == null ? '—' : `${best} rounds`}
             startLabel="Start sequence" onStart={begin}>
-            <View style={styles.demo}>
-              {shapes.slice(0, count).map(([label, glyph], index) => (
-                <View key={label} style={[styles.demoTile, { width: `${94 / size}%`, backgroundColor: palette[index % palette.length][0] }]}>
-                  <Text style={[styles.demoGlyph, { color: palette[index % palette.length][1] }]}>{glyph}</Text>
-                </View>
-              ))}
-            </View>
+            <SequenceMark size={170} />
           </GameBrief>
         ) : (
           <View style={styles.playfield}>
@@ -144,9 +139,6 @@ const styles = StyleSheet.create({
   page: { flexGrow: 1, justifyContent: 'flex-start', alignItems: 'center', padding: space.page },
   playfield: { flexGrow: 1, justifyContent: 'center', width: '100%', maxWidth: space.maxBoard, gap: space.page },
   footer: { flexDirection: 'row', justifyContent: 'space-between', padding: space.md, backgroundColor: colors.surface, borderRadius: space.radius },
-  demo: { width: '76%', maxWidth: 248, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.xs },
-  demoTile: { aspectRatio: 1, borderRadius: space.radius, borderWidth: space.hairline, borderColor: colors.arcadeViolet, alignItems: 'center', justifyContent: 'center' },
-  demoGlyph: { fontSize: 24 },
   body: { color: colors.muted, fontSize: 15, lineHeight: 22 },
   hud: { flexDirection: 'row', gap: space.page, alignItems: 'center' },
   label: { ...type.label, color: colors.muted },

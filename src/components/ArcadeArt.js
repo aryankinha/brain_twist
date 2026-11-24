@@ -1,15 +1,16 @@
 import { StyleSheet, Text, View } from 'react-native';
+import SequenceMark from './SequenceMark';
 import { colors, space } from '../theme';
 
 const art = {
   sudoku: { tiles: ['3', '', '8', '', '5', '', '1', '', '6'], fill: colors.arcadeViolet },
   lights: { tiles: ['', '●', '', '●', '●', '●', '', '●', ''], fill: colors.arcadeAmber },
   schulte: { tiles: ['8', '3', '6', '2', '1', '4', '7', '9', '5'], fill: colors.arcadeLime, target: 4 },
-  sequence: { tiles: ['●', '■', '▲', '◆'], fill: colors.arcadeBlue },
   stroop: { tiles: ['R', 'B', 'G', 'Y'], fill: colors.arcadePink },
 };
 
 export default function ArcadeArt({ game, size = 76, card = false, highlight = true }) {
+  if (game === 'sequence') return <SequenceMark size={size} />;
   const { tiles, fill, target } = art[game] ?? art.sudoku;
   const columns = tiles.length === 4 ? 2 : 3;
   const gap = 3;
