@@ -14,7 +14,7 @@ import Button from './Button';
 
 export default function ResultModal({ game, value, children = null, title = null, onAgain, onBack }) {
   const { profile } = useUser();
-  const { userId, name } = profile;
+  const { userId, name, avatarId } = profile;
   const [attempt, setAttempt] = useState(0);
   const [ranks, setRanks] = useState(null);
   const [record, setRecord] = useState(null);
@@ -37,7 +37,7 @@ export default function ResultModal({ game, value, children = null, title = null
         const next = await savedRound.current;
         localSaved = true;
         if (active) setRecord(next);
-        const ranking = await submitScore({ userId, name, game, value });
+        const ranking = await submitScore({ userId, name, game, value, avatarId });
         if (active) {
           if (ranking.levelRank != null) setRanks(ranking);
           setStatus('saved');
@@ -48,7 +48,7 @@ export default function ResultModal({ game, value, children = null, title = null
     }
     void save();
     return () => { active = false; };
-  }, [attempt, day, game, name, userId, value]);
+  }, [attempt, avatarId, day, game, name, userId, value]);
 
   const newBest = record && record.previous !== record.best;
   useEffect(() => {

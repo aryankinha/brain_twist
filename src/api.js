@@ -18,14 +18,21 @@ async function request(path, options, signal) {
 
 export const ping = () => request('/health');
 
-export function submitScore(score) {
-  return request('/scores?rankings=1', {
+let leaderboardRevision = 0;
+export const getLeaderboardRevision = () => leaderboardRevision;
+
+export async function submitScore(score) {
+  const result = await request('/scores?rankings=1', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(score),
   });
+  leaderboardRevision += 1;
+  return result;
 }
 
-export function getLeaderboard(game, userId, signal) {
-  return request(`/leaderboard/${game}?userId=${encodeURIComponent(userId)}`, {}, signal);
+export function getLeaderboard(game, userId, period, signal) {
+  return request(`/leaderboard/${game}?userId=${encodeURIComponent(userId)}&period=${period}`, {}, signal);
 }
+
+export const getPlayer = (key, signal) => request(`/players/${key}`, {}, signal);
