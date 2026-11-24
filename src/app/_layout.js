@@ -1,17 +1,21 @@
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View } from 'react-native';
 import { colors } from '../theme';
 import { FeedbackProvider, useFeedback } from '../feedback';
 import { UserProvider } from '../user-context';
 
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
   return (
-    <>
+    <View style={styles.root} onLayout={SplashScreen.hide}>
       <StatusBar style="dark" />
       <UserProvider>
         <FeedbackProvider><GameStack /></FeedbackProvider>
       </UserProvider>
-    </>
+    </View>
   );
 }
 
@@ -35,3 +39,7 @@ function GameStack() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.arcade },
+});

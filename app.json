@@ -30,6 +30,12 @@
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#222238"
+        }
       ]
     ]
   }

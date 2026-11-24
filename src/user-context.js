@@ -65,49 +65,46 @@ export function UserProvider({ children }) {
   }
 
   const close = () => { if (profile && !saving) setEditing(false); };
+  const form = (
+    <SafeAreaView style={styles.screen}>
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formPage}>
+          <Reveal style={styles.form}>
+            <View style={styles.mark}><Avatar id={avatarId} size={64} /></View>
+            <Text accessibilityRole="header" style={styles.title}>{profile ? 'Edit profile' : 'Create your profile'}</Text>
+            <TextInput
+              accessibilityLabel="Name"
+              placeholder="Name"
+              placeholderTextColor={colors.muted}
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              maxLength={20}
+              editable={!saving}
+              returnKeyType="done"
+            />
+            <AvatarPicker value={avatarId} onChange={setAvatarId} disabled={saving} />
+            {saveError && <Text style={styles.error}>Couldn’t save your profile. Try again.</Text>}
+            <Button primary title="Save" onPress={submit} disabled={!name.trim() || saving} />
+            {profile && <Button title="Cancel" onPress={close} disabled={saving} />}
+          </Reveal>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+
   return (
     <UserContext.Provider value={{ profile, editProfile }}>
-      {profile ? children : loading ? <LaunchMark /> : (
+      {profile ? children : loading ? <LaunchMark /> : loadError ? (
         <View style={styles.center}>
-          {loadError && (
-            <Button title="Retry loading profile" onPress={() => {
-              setLoading(true);
-              setLoadError(false);
-              void restore();
-            }} />
-          )}
+          <Button title="Retry loading profile" onPress={() => {
+            setLoading(true);
+            setLoadError(false);
+            void restore();
+          }} />
         </View>
-      )}
-      <Modal
-        visible={!loading && !loadError && (!profile || editing)}
-        onRequestClose={close}
-      >
-        <SafeAreaView style={styles.screen}>
-          <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formPage}>
-            <Reveal style={styles.form}>
-              <View style={styles.mark}><Avatar id={avatarId} size={64} /></View>
-              <Text accessibilityRole="header" style={styles.title}>{profile ? 'Edit profile' : 'Create your profile'}</Text>
-              <TextInput
-                accessibilityLabel="Name"
-                placeholder="Name"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                maxLength={20}
-                editable={!saving}
-                returnKeyType="done"
-              />
-              <AvatarPicker value={avatarId} onChange={setAvatarId} disabled={saving} />
-              {saveError && <Text style={styles.error}>Couldn’t save your profile. Try again.</Text>}
-              <Button primary title="Save" onPress={submit} disabled={!name.trim() || saving} />
-              {profile && <Button title="Cancel" onPress={close} disabled={saving} />}
-            </Reveal>
-          </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </Modal>
+      ) : form}
+      {profile && editing && <Modal visible onRequestClose={close}>{form}</Modal>}
     </UserContext.Provider>
   );
 }
