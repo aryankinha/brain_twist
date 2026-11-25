@@ -3,7 +3,6 @@ import { useAudioPlayer } from 'expo-audio';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Animated, AppState, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../components/Button';
 import GameBrief from '../components/GameBrief';
 import PrototypeSwitcher from '../components/PrototypeSwitcher';
 import { sequencePrototypeNames, VariantA, VariantB, VariantC } from '../components/SequencePrototype';
@@ -195,17 +194,22 @@ export default function SequenceScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
-      <Stack.Screen options={{ title: gameLabels[game] }} />
+      <Stack.Screen options={{
+        title: gameLabels[game],
+        headerRight: __DEV__ && phase === 'ready' && !Prototype ? () => (
+          <Pressable accessibilityRole="button" accessibilityLabel="Compare designs"
+            onPress={() => changeVariant('A')} style={({ pressed }) => [styles.designAction, pressed && styles.designPressed]}>
+            <Text style={styles.designText}>Designs</Text>
+          </Pressable>
+        ) : undefined,
+      }} />
       <ScrollView contentContainerStyle={styles.page}>
         {Prototype ? <Prototype model={prototype} /> : phase === 'ready' ? (
-          <>
-            <GameBrief kicker={`2 × 2 · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
-              detail={`You have 3 lives. Every fifth round brings a ${twists[bosses[0]][0]} or ${twists[bosses[1]][0]} boss.`}
-              best={best == null ? '—' : `${best} rounds`} startLabel="Start sequence" onStart={begin}>
-              <SequenceMark size={170} />
-            </GameBrief>
-            {__DEV__ && <Button title="Compare designs" onPress={() => changeVariant('A')} style={styles.compare} />}
-          </>
+          <GameBrief kicker={`2 × 2 · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
+            detail={`You have 3 lives. Every fifth round brings a ${twists[bosses[0]][0]} or ${twists[bosses[1]][0]} boss.`}
+            best={best == null ? '—' : `${best} rounds`} startLabel="Start sequence" onStart={begin}>
+            <SequenceMark size={170} />
+          </GameBrief>
         ) : (
           <View style={styles.playfield}>
             <View style={styles.hud}>
@@ -287,7 +291,9 @@ export default function SequenceScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paper },
   page: { flexGrow: 1, alignItems: 'center', padding: space.page },
-  compare: { marginTop: space.sm },
+  designAction: { minHeight: space.tap, paddingHorizontal: space.sm, alignItems: 'center', justifyContent: 'center' },
+  designText: { color: colors.violetInk, fontWeight: '900' },
+  designPressed: { opacity: 0.65 },
   switcherDock: { height: 58 },
   switcher: { position: 'relative', bottom: 0 },
   playfield: { flexGrow: 1, justifyContent: 'center', width: '100%', maxWidth: space.maxBoard, gap: space.md },
