@@ -1,53 +1,16 @@
 // Three throwaway leaderboard layouts on /leaderboard, switchable with ?variant=A, B, or C.
-import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Avatar from './Avatar';
 import Reveal from './Reveal';
 import { colors, space, type } from '../theme';
 
 export const prototypeNames = { A: 'Arena', B: 'Trophy Hall', C: 'Score Sheet' };
-const keys = Object.keys(prototypeNames);
 const places = [2, 1, 3];
 const metals = {
   1: [colors.amber, colors.arcadeAmber, colors.amberInk],
   2: [colors.sky, colors.arcadeBlue, colors.skyInk],
   3: [colors.peach, colors.arcadePink, colors.peachInk],
 };
-
-export function PrototypeSwitcher({ current, onChange, paused }) {
-  const move = (step) => onChange(keys[(keys.indexOf(current) + step + keys.length) % keys.length]);
-
-  useFocusEffect(useCallback(() => {
-    if (Platform.OS !== 'web' || paused) return;
-    /** @param {KeyboardEvent} event */
-    function onKey(event) {
-      const target = event.target;
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
-        (target instanceof Element && target.closest('input, textarea, select, [contenteditable], [role="tab"]'))) return;
-      const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
-      if (!step) return;
-      event.preventDefault();
-      onChange(keys[(keys.indexOf(current) + step + keys.length) % keys.length]);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [current, onChange, paused]));
-
-  return (
-    <View style={styles.switcher}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Previous layout" onPress={() => move(-1)}
-        style={({ pressed }) => [styles.arrow, pressed && styles.arrowActive]}>
-        <Text style={styles.switchText}>←</Text>
-      </Pressable>
-      <Text accessibilityLiveRegion="polite" style={[styles.switchText, styles.switchLabel]}>{current} · {prototypeNames[current]}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Next layout" onPress={() => move(1)}
-        style={({ pressed }) => [styles.arrow, pressed && styles.arrowActive]}>
-        <Text style={styles.switchText}>→</Text>
-      </Pressable>
-    </View>
-  );
-}
 
 function Trophy({ size = 82 }) {
   return (
@@ -193,11 +156,6 @@ export function VariantC({ model, controls, status, listBar }) {
 }
 
 const styles = StyleSheet.create({
-  switcher: { position: 'absolute', bottom: space.xs, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: 30, paddingHorizontal: space.xs, backgroundColor: colors.arcade, zIndex: 1 },
-  arrowActive: { opacity: 0.7 },
-  switchLabel: { minWidth: 104, textAlign: 'center' },
-  arrow: { width: space.tap, height: space.tap, alignItems: 'center', justifyContent: 'center' },
-  switchText: { color: colors.paper, fontWeight: '800' },
   trophy: { alignSelf: 'center', flexShrink: 0 },
   handles: { position: 'absolute', left: '8%', right: '8%', top: '18%', height: '37%', borderWidth: 4, borderColor: colors.arcadeAmber, borderBottomLeftRadius: 22, borderBottomRightRadius: 22, borderTopLeftRadius: 5, borderTopRightRadius: 5 },
   cup: { position: 'absolute', left: '22%', right: '22%', top: '9%', height: '55%', backgroundColor: colors.arcadeAmber, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, borderRightWidth: 5, borderRightColor: colors.amberInk, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

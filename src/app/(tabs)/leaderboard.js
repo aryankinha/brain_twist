@@ -3,9 +3,10 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Avatar from '../../components/Avatar';
 import Button from '../../components/Button';
-import { PrototypeSwitcher, VariantA, VariantB, VariantC } from '../../components/LeaderboardPrototype';
+import { prototypeNames, VariantA, VariantB, VariantC } from '../../components/LeaderboardPrototype';
 import LeaderboardProfile from '../../components/LeaderboardProfile';
 import Reveal from '../../components/Reveal';
+import PrototypeSwitcher from '../../components/PrototypeSwitcher';
 import { getLeaderboard, getLeaderboardRevision } from '../../api';
 import { levelKey, levels } from '../../difficulty';
 import { formatScore, gameLabels, scoreUnit } from '../../format';
@@ -251,7 +252,7 @@ export default function LeaderboardScreen() {
           </Pressable>
         </View>
       )}
-      {Prototype && <PrototypeSwitcher current={variantKey} onChange={changeVariant} paused={Boolean(player)} />}
+      {Prototype && <PrototypeSwitcher current={variantKey} onChange={changeVariant} paused={Boolean(player)} names={prototypeNames} />}
       {player && <LeaderboardProfile key={player.key} entry={player} ownAvatar={avatarId} onClose={() => setPlayer(null)} />}
     </View>
   );

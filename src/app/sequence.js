@@ -3,7 +3,10 @@ import { useAudioPlayer } from 'expo-audio';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Animated, AppState, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '../components/Button';
 import GameBrief from '../components/GameBrief';
+import PrototypeSwitcher from '../components/PrototypeSwitcher';
+import { sequencePrototypeNames, VariantA, VariantB, VariantC } from '../components/SequencePrototype';
 import ResultModal from '../components/ResultModal';
 import SequenceMark from '../components/SequenceMark';
 import { levelKey, readDifficulty } from '../difficulty';
@@ -32,10 +35,18 @@ const twists = {
   decoy: ['Decoy', 'Ignore the flash marked ×.'],
   timed: ['Timed', 'Tap before the time bar runs out.'],
 };
+const prototypeLayouts = { A: VariantA, B: VariantB, C: VariantC };
+
+function changeVariant(variant) {
+  router.setParams({ variant });
+}
+
 const pitches = [0.75, 0.84, 0.94, 1, 1.12, 1.26, 1.33, 1.5, 1.68];
 
 export default function SequenceScreen() {
-  const { difficulty: requested } = useLocalSearchParams();
+  const { difficulty: requested, variant } = useLocalSearchParams();
+  const Prototype = __DEV__ && typeof variant === 'string' && Object.hasOwn(prototypeLayouts, variant)
+    ? prototypeLayouts[variant] : null;
   const difficulty = readDifficulty(requested);
   const game = levelKey('sequence', difficulty);
   const { opening, bosses } = sequenceLevels[difficulty];
@@ -148,7 +159,7 @@ export default function SequenceScreen() {
   }, [animate, combo, pattern.length, phase, points]);
 
   function begin() {
-    if (phase === 'over') {
+    if (phase === 'over' && !Prototype) {
       setBest((old) => old == null ? cleared : Math.max(old, cleared));
     }
     dispatch({ type: 'round', round: buildRound(difficulty, 1, null) });
@@ -175,17 +186,26 @@ export default function SequenceScreen() {
   const near = best == null ? 0 : best - cleared;
   const nearBest = near === 1 || near === 2;
   const progress = pattern.length ? step / pattern.length : 0;
+  const displayPoints = animate && points > 0 && phase === 'clear' ? shownPoints : points;
+  const prototype = {
+    animate, best, begin, board, boss, cleared, clock, combo: multiplier(combo), cue, foreground, length: pattern.length || opening,
+    lastHit: round.lastHit, lives, miss, number, opening, phase, points: displayPoints, prompt, shake, size, step,
+    tap, tiles, twist, waves, onExit: () => changeVariant('regular'),
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <Stack.Screen options={{ title: gameLabels[game] }} />
       <ScrollView contentContainerStyle={styles.page}>
-        {phase === 'ready' ? (
-          <GameBrief kicker={`2 × 2 · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
-            detail={`You have 3 lives. Every fifth round brings a ${twists[bosses[0]][0]} or ${twists[bosses[1]][0]} boss.`}
-            best={best == null ? '—' : `${best} rounds`} startLabel="Start sequence" onStart={begin}>
-            <SequenceMark size={170} />
-          </GameBrief>
+        {Prototype ? <Prototype model={prototype} /> : phase === 'ready' ? (
+          <>
+            <GameBrief kicker={`2 × 2 · ${opening} opening cues`} title="Watch. Remember. Repeat." tone={colors.violet}
+              detail={`You have 3 lives. Every fifth round brings a ${twists[bosses[0]][0]} or ${twists[bosses[1]][0]} boss.`}
+              best={best == null ? '—' : `${best} rounds`} startLabel="Start sequence" onStart={begin}>
+              <SequenceMark size={170} />
+            </GameBrief>
+            {__DEV__ && <Button title="Compare designs" onPress={() => changeVariant('A')} style={styles.compare} />}
+          </>
         ) : (
           <View style={styles.playfield}>
             <View style={styles.hud}>
@@ -245,12 +265,15 @@ export default function SequenceScreen() {
             </Animated.View>
             <View style={styles.footer}>
               <View><Text style={styles.caption}>{step} / {pattern.length} repeated</Text><Text style={styles.caption}>Best {best ?? '—'}</Text></View>
-              <View style={styles.points}><Text style={styles.score}>{animate && points > 0 && phase === 'clear' ? shownPoints : points} pts</Text><Text style={styles.caption}>{combo > 1 ? `×${multiplier(combo)} combo` : 'Run score'}</Text></View>
+              <View style={styles.points}><Text style={styles.score}>{displayPoints} pts</Text><Text style={styles.caption}>{combo > 1 ? `×${multiplier(combo)} combo` : 'Run score'}</Text></View>
             </View>
           </View>
         )}
       </ScrollView>
-      {phase === 'over' && (
+      {Prototype && <View pointerEvents="box-none" style={styles.switcherDock}>
+        <PrototypeSwitcher current={variant} onChange={changeVariant} names={sequencePrototypeNames} style={styles.switcher} />
+      </View>}
+      {!Prototype && phase === 'over' && (
         <ResultModal game={game} value={cleared} onAgain={begin} onBack={() => router.back()} title="Sequence ended" showComparison={!nearBest}>
           <Text style={styles.body}>{nearBest ? `${near} ${near === 1 ? 'round' : 'rounds'} from your best`
             : timedOut ? 'You ran out of time on the last tap.' : `Next was ${tiles[expectedTile(round)][0].toLowerCase()}.`}</Text>
@@ -264,6 +287,9 @@ export default function SequenceScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.paper },
   page: { flexGrow: 1, alignItems: 'center', padding: space.page },
+  compare: { marginTop: space.sm },
+  switcherDock: { height: 58 },
+  switcher: { position: 'relative', bottom: 0 },
   playfield: { flexGrow: 1, justifyContent: 'center', width: '100%', maxWidth: space.maxBoard, gap: space.md },
   hud: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingBottom: space.md },
   stat: { flex: 1, minWidth: 64, gap: space.xs },
