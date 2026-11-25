@@ -4,7 +4,7 @@ export const levelDetails = {
   sudoku: ['More givens', 'Fewer givens', 'Fewest givens'],
   lights: ['3 × 3 board', '4 × 4 board', '5 × 5 board'],
   schulte: ['5 × 5 · color groups', '5 × 5 · uniform numbers', '6 × 6 · uniform numbers'],
-  sequence: ['2 × 2 · 3-shape start', '3 × 3 · 4-shape start', '4 × 4 · 5-shape start'],
+  sequence: ['3 cues · Ghost and Echo bosses', '4 cues · Reverse and Shuffle bosses', '5 cues · Decoy and Timed bosses'],
   stroop: ['30-second ink-color sprint'],
 };
 

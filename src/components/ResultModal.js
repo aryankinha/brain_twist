@@ -12,7 +12,7 @@ import ArcadeArt from './ArcadeArt';
 import Reveal from './Reveal';
 import Button from './Button';
 
-export default function ResultModal({ game, value, children = null, title = null, onAgain, onBack }) {
+export default function ResultModal({ game, value, children = null, title = null, showComparison = true, onAgain, onBack }) {
   const { profile } = useUser();
   const { userId, name, avatarId } = profile;
   const [attempt, setAttempt] = useState(0);
@@ -82,7 +82,7 @@ export default function ResultModal({ game, value, children = null, title = null
             </Reveal>
           )}
           <Text style={styles.text}>Personal best  {formatScore(game, record?.best)}</Text>
-          {difference !== null && difference !== 0 && (
+          {showComparison && difference !== null && difference !== 0 && (
             <Text style={styles.status}>
               {unit === 'moves'
                 ? `${Math.abs(difference)} ${Math.abs(difference) === 1 ? 'move' : 'moves'} ${difference > 0 ? 'fewer' : 'more'} than your previous best`
