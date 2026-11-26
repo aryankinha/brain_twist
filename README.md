@@ -88,6 +88,18 @@ Press:
 - `w` to run on web.
 - Or scan the QR code using the **Expo Go** app.
 
+#### Android previews
+
+To open the project in Expo Go from another network, run `npx expo start --go --tunnel` and scan the QR code while the server is running.
+
+For an Android preview that installs directly, build the internal APK from the repository root:
+
+```bash
+npx eas-cli@latest build --platform android --profile preview
+```
+
+When the build succeeds, open **Brain Twist → Builds → Install** in the [Expo dashboard](https://expo.dev/accounts/aryankinha/projects/brain-twist/builds). The internal preview also includes the Sequence Memory **Designs** picker.
+
 #### Environment Variables (Client)
 
 By default, the client points to the hosted Render server (`https://brain-twist.onrender.com`). To point to a local or custom backend, copy `.env.example`:
@@ -132,7 +144,7 @@ curl http://localhost:10000/health
 
 Run `npm run web` to open the browser preview. If the hosted API has yet to deploy the web-origin update, run the API locally and set `EXPO_PUBLIC_API_URL=http://localhost:10000` in the app’s `.env`. The API accepts browser requests from local loopback origins. For a deployed web preview, set the API’s `WEB_ORIGINS` to a comma-separated list of exact origins.
 
-Run `npm ci --prefix server` once, then `npm run check` before pushing. GitHub Actions runs the same checks on every push and pull request.
+Run `npm ci --prefix server` once, then `npm run check` before pushing. GitHub Actions also exercises all five games at phone and tablet sizes and runs a native Android launch check at two display sizes and font scales. See the [verification runs](https://github.com/aryankinha/brain_twist/actions/workflows/verify.yml) for results.
 
 ---
 
