@@ -26,8 +26,14 @@ for (const [name, width, height, deviceScaleFactor] of profiles) {
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      await page.route('https://brain-twist.onrender.com/**', (route) =>
-        route.fulfill({ json: { ok: true, entries: [], ranked: 0 } }));
+      const weeklyRequests = [];
+      await page.route('https://brain-twist.onrender.com/**', (route) => {
+        const request = new URL(route.request().url());
+        if (request.pathname === '/leaderboard/overall' && request.searchParams.get('period') === 'week') {
+          weeklyRequests.push(request.pathname);
+        }
+        return route.fulfill({ json: { ok: true, entries: [], ranked: 0 } });
+      });
       const button = (label) => page.getByRole('button', { name: label, exact: typeof label === 'string' });
       const open = (path = '') => page.goto(`${appUrl}/${path}`);
       const noOverflow = () => page.evaluate(() => {
@@ -100,6 +106,14 @@ for (const [name, width, height, deviceScaleFactor] of profiles) {
 
       await open('leaderboard');
       await page.getByText('No ranked scores yet', { exact: true }).waitFor();
+      await button('Ranking period: Weekly').tap();
+      await page.getByRole('radio', { name: 'Daily', exact: true }).tap();
+      await button('Ranking period: Daily').waitFor();
+      await page.getByText('No ranked scores yet', { exact: true }).waitFor();
+      await page.reload();
+      await page.getByText('No ranked scores yet', { exact: true }).waitFor();
+      assert.equal(weeklyRequests.length, 1, 'Opening and reloading standings reused the saved weekly board');
+      assert.equal(await button('Refresh standings').count(), 0);
       await noOverflow();
       assert.deepEqual(errors, []);
     } finally {

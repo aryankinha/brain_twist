@@ -3,7 +3,7 @@
     "name": "Brain Twist",
     "slug": "brain-twist",
     "owner": "aryankinha",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.aryankinha.braintwist",
+      "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#222238",
         "foregroundImage": "./assets/android-icon-foreground.png",

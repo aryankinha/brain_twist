@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const baseUrl = (process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://brain-twist.onrender.com').replace(/\/+$/, '');
 
 async function request(path, options, signal) {
@@ -18,8 +20,16 @@ async function request(path, options, signal) {
 
 export const ping = () => request('/health');
 
+const revisionKey = 'leaderboard-revision-v1';
 let leaderboardRevision = 0;
-export const getLeaderboardRevision = () => leaderboardRevision;
+let storedRevision;
+export async function getLeaderboardRevision() {
+  storedRevision ??= AsyncStorage.getItem(revisionKey)
+    .then((value) => { leaderboardRevision = Math.max(leaderboardRevision, Number(value) || 0); })
+    .catch(() => {});
+  await storedRevision;
+  return leaderboardRevision;
+}
 
 export async function submitScore(score) {
   const result = await request('/scores?rankings=1', {
@@ -27,7 +37,9 @@ export async function submitScore(score) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(score),
   });
-  leaderboardRevision += 1;
+  await getLeaderboardRevision();
+  leaderboardRevision = Math.max(Date.now(), leaderboardRevision + 1);
+  await AsyncStorage.setItem(revisionKey, String(leaderboardRevision)).catch(() => {});
   return result;
 }
 

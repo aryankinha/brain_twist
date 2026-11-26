@@ -9,6 +9,7 @@ import AvatarPicker from './components/AvatarPicker';
 import LaunchMark from './components/LaunchMark';
 import Reveal from './components/Reveal';
 import Button from './components/Button';
+import { preloadStandings } from './leaderboard-cache';
 import { loadProfile, saveProfile } from './storage';
 import { colors, space } from './theme';
 
@@ -32,8 +33,25 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    ping().catch(() => {});
-    void restore();
+    let active = true;
+    let timer;
+    const launch = new Promise((resolve) => { timer = setTimeout(resolve, 1_500); });
+    void ping().catch(() => {});
+    async function boot() {
+      try {
+        const saved = await loadProfile();
+        if (active && saved) void preloadStandings(saved.userId).catch(() => {});
+        await launch;
+        if (active) setProfile(saved);
+      } catch {
+        await launch;
+        if (active) setLoadError(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void boot();
+    return () => { active = false; clearTimeout(timer); };
   }, []);
 
   function editProfile() {
@@ -56,6 +74,7 @@ export function UserProvider({ children }) {
     try {
       await saveProfile(next);
       setProfile(next);
+      if (!profile) void preloadStandings(next.userId).catch(() => {});
       setEditing(false);
     } catch {
       setSaveError(true);

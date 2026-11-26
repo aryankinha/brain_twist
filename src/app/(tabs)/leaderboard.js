@@ -1,13 +1,14 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Avatar from '../../components/Avatar';
 import Button from '../../components/Button';
 import { prototypeNames, VariantA, VariantB, VariantC } from '../../components/LeaderboardPrototype';
 import LeaderboardProfile from '../../components/LeaderboardProfile';
 import Reveal from '../../components/Reveal';
 import PrototypeSwitcher from '../../components/PrototypeSwitcher';
-import { getLeaderboard, getLeaderboardRevision } from '../../api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { readStandings, refreshStandings } from '../../leaderboard-cache';
 import { levelKey, levels } from '../../difficulty';
 import { formatScore, gameLabels, scoreUnit } from '../../format';
 import { colors, space, type } from '../../theme';
@@ -17,7 +18,11 @@ const tabs = [
   ['overall', 'Overall'], ['sudoku', 'Sudoku'], ['lights', 'Lights Out'], ['schulte', 'Schulte'],
   ['sequence', 'Sequence Memory'], ['stroop', 'Stroop'],
 ];
-const periods = [['day', 'Daily'], ['week', 'Weekly'], ['all', 'All time']];
+const periods = [
+  ['day', 'Daily', 'Resets at midnight UTC · compared with yesterday'],
+  ['week', 'Weekly', 'Resets Monday UTC · compared with last week'],
+  ['all', 'All time', 'Movement since Monday UTC'],
+];
 const defaultData = { entries: [], you: null, ranked: 0, endsAt: null };
 const medals = [colors.amber, colors.sky, colors.peach];
 const maxWidth = 850;
@@ -75,64 +80,54 @@ export default function LeaderboardScreen() {
   const { userId, avatarId } = profile;
   const [game, setGame] = useState('overall');
   const [period, setPeriod] = useState('week');
+  const [periodOpen, setPeriodOpen] = useState(false);
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [failure, setFailure] = useState(null);
   const [snapshot, setSnapshot] = useState(null);
-  const cache = useRef(new Map());
-  const request = useRef(null);
+  const requestId = useRef(0);
   const group = game.split('-')[0];
   const overall = game === 'overall';
   const key = `${game}/${period}`;
   const data = snapshot?.key === key ? snapshot.data : defaultData;
   const hasData = snapshot?.key === key;
   const title = overall ? 'Overall standings' : gameLabels[game];
+  const [, periodLabel, periodHint] = periods.find(([id]) => id === period);
+  const previousPeriod = hasData && snapshot.previousPeriod;
+  const closePeriod = () => setPeriodOpen(false);
 
-  const load = useCallback((force = false) => {
-    const saved = cache.current.get(key);
-    const now = Date.now();
-    const revision = getLeaderboardRevision();
-    const current = saved && (saved.data.endsAt == null || saved.data.endsAt > now);
-    if (current) setSnapshot(saved);
-    if (saved && !current) setSnapshot(null);
-    if (!force && current && saved.revision === revision && now - saved.at < 30_000) {
-      setLoading(false);
-      setRefreshing(false);
-      setFailure(null);
-      return;
-    }
-
-    request.current?.abort();
-    const controller = new AbortController();
-    request.current = controller;
-    setLoading(!current);
+  const load = useCallback(async (force = false) => {
+    const id = ++requestId.current;
     setFailure(null);
-    getLeaderboard(game, userId, period, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (result.ranked == null) throw new Error('Period rankings are unavailable');
-        const next = { key, data: result, revision, at: Date.now() };
-        cache.current.set(key, next);
-        setSnapshot(next);
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) setFailure(error.name === 'TypeError' ? 'offline' : 'error');
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) { setLoading(false); setRefreshing(false); }
-      });
+    try {
+      const saved = await readStandings(game, userId, period);
+      if (id !== requestId.current) return;
+      if (saved) {
+        setSnapshot({ ...saved, key, previousPeriod: saved.data.endsAt != null && saved.data.endsAt <= Date.now() });
+        setLoading(false);
+      }
+      const next = await refreshStandings(game, userId, period, saved, force);
+      if (id === requestId.current) setSnapshot({ ...next, key, previousPeriod: next.data.endsAt != null && next.data.endsAt <= Date.now() });
+    } catch (error) {
+      if (id === requestId.current) setFailure(error.name === 'TypeError' ? 'offline' : 'error');
+    } finally {
+      if (id === requestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, [game, key, period, userId]);
 
   useFocusEffect(useCallback(() => {
-    load();
-    return () => request.current?.abort();
+    void load();
+    return () => { ++requestId.current; };
   }, [load]));
 
   const endsAt = data.endsAt;
   useFocusEffect(useCallback(() => {
-    if (endsAt == null) return;
-    const timer = setTimeout(() => load(true), Math.max(0, endsAt - Date.now()));
+    if (endsAt == null || endsAt <= Date.now()) return;
+    const timer = setTimeout(() => load(), endsAt - Date.now());
     return () => clearTimeout(timer);
   }, [endsAt, load]));
 
@@ -150,11 +145,14 @@ export default function LeaderboardScreen() {
 
   const controls = (
     <>
-      <View style={styles.periods}>
-        {periods.map(([id, label]) => (
-          <Button key={id} title={label} selected={id === period} style={styles.filter}
-            onPress={() => changeFilter(setPeriod, id, period)} />
-        ))}
+      <View style={styles.periodRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Ranking period: ${periodLabel}`}
+          accessibilityState={{ expanded: periodOpen }} onPress={() => setPeriodOpen(true)}
+          style={({ pressed }) => [styles.periodTrigger, pressed && styles.pressed]}>
+          <Text style={styles.periodLabel}>{periodLabel}</Text>
+          <View style={styles.chevron} />
+        </Pressable>
+        <Text style={styles.periodInfo}>{previousPeriod ? 'Showing the previous period' : periodHint}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {tabs.map(([id, name]) => (
@@ -167,7 +165,6 @@ export default function LeaderboardScreen() {
           selected={game === levelKey(group, level)} style={styles.filter}
           onPress={() => changeFilter(setGame, levelKey(group, level), game)} />)}
       </View>}
-      <Text style={styles.periodInfo}>{period === 'day' ? 'Resets at midnight UTC · compared with yesterday' : period === 'week' ? 'Resets Monday UTC · compared with last week' : 'Movement since Monday UTC'}</Text>
     </>
   );
   const status = (
@@ -177,7 +174,7 @@ export default function LeaderboardScreen() {
         <Text style={styles.muted}>{failure === 'offline' ? 'Connection unavailable.' : 'Could not load standings.'} {hasData ? 'Showing the last loaded standings.' : ''}</Text>
         <Button title="Retry" onPress={() => load(true)} />
       </View>}
-      {!loading && !failure && !data.entries.length && <View style={styles.message}>
+      {!loading && !failure && !previousPeriod && !data.entries.length && <View style={styles.message}>
         <Text accessibilityRole="header" style={styles.section}>No ranked scores yet</Text>
         <Text style={styles.muted}>Finish a round to enter this board.</Text>
         <Button primary title={overall ? 'Explore games' : `Play ${title}`} onPress={() => {
@@ -187,16 +184,8 @@ export default function LeaderboardScreen() {
       </View>}
     </>
   );
-  const listBar = (
-    <>
-      {hasData && !failure && (
-        <View style={styles.listBar}>
-          {data.entries.length > 3 && <Text accessibilityRole="header" style={styles.section}>Standings</Text>}
-          <Button title="Refresh standings" style={styles.refreshButton} onPress={() => load(true)} />
-        </View>
-      )}
-    </>
-  );
+  const listBar = data.entries.length > 3
+    ? <Text accessibilityRole="header" style={styles.section}>Standings</Text> : null;
   const model = {
     title, hint: boardHint, entries: data.entries, ownAvatar: avatarId, onPlayer: setPlayer,
     label: (entry) => playerLabel(entry, game),
@@ -245,14 +234,40 @@ export default function LeaderboardScreen() {
             style={styles.personal}>
             <Avatar id={avatarId} size={38} />
             <View style={styles.nameCell}>
-              <Text style={styles.personalLabel}>Your rank{failure ? ' · saved' : ''}</Text>
+              <Text style={styles.personalLabel}>Your rank{failure || previousPeriod ? ' · saved' : ''}</Text>
               <Text style={styles.name}>{data.you ? `#${data.you.rank} of ${data.ranked}` : 'Unranked'}</Text>
             </View>
             {data.you && <><Text style={styles.score}>{resultLabel(data.you, game)}</Text><Movement amount={data.you.movement} /></>}
           </Pressable>
         </View>
       )}
-      {Prototype && <PrototypeSwitcher current={variantKey} onChange={changeVariant} paused={Boolean(player)} names={prototypeNames} />}
+      {periodOpen && <Modal transparent visible onRequestClose={closePeriod}>
+        <View style={styles.periodOverlay}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Dismiss ranking period"
+            onPress={closePeriod} style={StyleSheet.absoluteFill} />
+          <SafeAreaView edges={['bottom']} style={styles.periodSheet} accessibilityViewIsModal>
+            <View style={styles.periodHeading}>
+              <Text accessibilityRole="header" style={styles.periodTitle}>Ranking period</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Close ranking period" onPress={closePeriod}
+                style={styles.periodClose}><Text style={styles.periodCloseText}>×</Text></Pressable>
+            </View>
+            {periods.map(([id, label, hint]) => (
+              <Pressable key={id} accessibilityRole="radio" accessibilityLabel={label}
+                accessibilityState={{ checked: id === period }} onPress={() => {
+                  closePeriod();
+                  changeFilter(setPeriod, id, period);
+                }} style={({ pressed }) => [styles.periodOption, id === period && styles.periodSelected, pressed && styles.pressed]}>
+                <View style={styles.nameCell}>
+                  <Text style={styles.periodLabel}>{label}</Text>
+                  <Text style={styles.muted}>{hint}</Text>
+                </View>
+                {id === period && <Text accessible={false} style={styles.periodCheck}>✓</Text>}
+              </Pressable>
+            ))}
+          </SafeAreaView>
+        </View>
+      </Modal>}
+      {Prototype && <PrototypeSwitcher current={variantKey} onChange={changeVariant} paused={Boolean(player) || periodOpen} names={prototypeNames} />}
       {player && <LeaderboardProfile key={player.key} entry={player} ownAvatar={avatarId} onClose={() => setPlayer(null)} />}
     </View>
   );
@@ -266,11 +281,26 @@ const styles = StyleSheet.create({
   bannerLabel: { ...type.label, color: colors.arcadeLime },
   bannerDetail: { color: colors.arcadeWhite },
   title: { ...type.heading, color: colors.paper },
-  periods: { flexDirection: 'row', gap: space.xs, marginTop: space.md },
+  periodRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
+  periodTrigger: { flexDirection: 'row', minHeight: space.tap, borderRadius: space.radius, backgroundColor: colors.tint,
+    alignItems: 'center', justifyContent: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.xs },
+  periodLabel: { color: colors.arcade, fontWeight: '800' },
+  chevron: { width: 7, height: 7, borderRightWidth: 2, borderBottomWidth: 2, borderColor: colors.accent, transform: [{ rotate: '45deg' }] },
+  periodOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end', alignItems: 'center' },
+  periodSheet: { width: '100%', maxWidth: 480, gap: space.xs, padding: space.page,
+    backgroundColor: colors.paper, borderTopLeftRadius: space.card, borderTopRightRadius: space.card },
+  periodHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  periodTitle: { ...type.heading, color: colors.arcade, fontSize: 22, flexShrink: 1 },
+  periodClose: { width: space.tap, minHeight: space.tap, justifyContent: 'center', alignItems: 'center' },
+  periodCloseText: { fontSize: 26, color: colors.muted },
+  periodOption: { flexDirection: 'row', alignItems: 'center', minHeight: 56, borderRadius: space.radius,
+    padding: space.sm, paddingHorizontal: space.md, gap: space.sm },
+  periodSelected: { backgroundColor: colors.tint },
+  periodCheck: { color: colors.accent, fontWeight: '900' },
   chips: { gap: space.sm, paddingVertical: space.sm },
   levels: { flexDirection: 'row', gap: space.xs },
   filter: { flex: 1, paddingHorizontal: space.xs },
-  periodInfo: { color: colors.muted, fontSize: 12, marginVertical: space.sm },
+  periodInfo: { color: colors.muted, fontSize: 12, flex: 1, minWidth: 135 },
   podium: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: space.sm, marginTop: space.sm },
   podiumPlayer: { flex: 1, maxWidth: 230, minWidth: 0, minHeight: 145, padding: space.xs, paddingVertical: space.sm, borderRadius: space.radius, alignItems: 'center', justifyContent: 'center', gap: space.xs },
   winner: { minHeight: 170 },
@@ -280,8 +310,6 @@ const styles = StyleSheet.create({
   section: { color: colors.arcade, fontWeight: '900', fontSize: 20, marginTop: space.sm },
   message: { paddingVertical: space.md, gap: space.sm, alignItems: 'flex-start' },
   muted: { color: colors.muted, fontSize: 12 },
-  listBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm, marginTop: space.sm },
-  refreshButton: { marginLeft: 'auto' },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 60, padding: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   compactRow: { minHeight: 52, paddingVertical: space.xs },
   tableMovement: { minWidth: space.xl, alignItems: 'flex-end' },

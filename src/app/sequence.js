@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useAudioPlayer } from 'expo-audio';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Animated, AppState, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import GameBrief from '../components/GameBrief';
@@ -57,9 +57,8 @@ export default function SequenceScreen() {
   const [clock] = useState(() => new Animated.Value(1));
   const [shake] = useState(() => new Animated.Value(0));
   const [waves] = useState(() => tiles.map(() => new Animated.Value(0)));
-  const { play, animate, preferences } = useFeedback();
-  const tone = useAudioPlayer(require('../../assets/audio/sequence-tone.wav'));
-  const toneRequest = useRef(0);
+  const { play, playClip, animate } = useFeedback();
+  const tone = useAudioPlayer(require('../../assets/audio/sequence-tone.wav'), { downloadFirst: true });
   const { phase, number, cleared, points, combo, lives, pattern, board, cue, cursor, step, miss, rules, timedOut } = round;
   const twist = rules?.twist;
   const boss = twist ? twists[twist] : null;
@@ -81,15 +80,8 @@ export default function SequenceScreen() {
   }, []);
 
   const playTone = useCallback((tile) => {
-    if (!preferences.sound) return;
-    const request = ++toneRequest.current;
-    tone.seekTo(0).then(() => {
-      if (request !== toneRequest.current) return;
-      tone.shouldCorrectPitch = false;
-      tone.setPlaybackRate(pitches[tile] * (1 + Math.min(combo, 5) * 0.022));
-      tone.play();
-    }).catch(() => {});
-  }, [combo, preferences.sound, tone]);
+    playClip(tone, pitches[tile] * (1 + Math.min(combo, 5) * 0.022));
+  }, [combo, playClip, tone]);
 
   useEffect(() => {
     if (!foreground || phase !== 'watch') return;
@@ -101,9 +93,6 @@ export default function SequenceScreen() {
   useEffect(() => {
     if (foreground && cue && !cue.fake) playTone(cue.tile);
   }, [cue, foreground, playTone]);
-
-  const stopTone = useCallback(() => { ++toneRequest.current; }, []);
-  useEffect(() => stopTone, [stopTone]);
 
   useEffect(() => {
     if (!foreground || phase !== 'input' || !rules.tapTime) return;
@@ -169,7 +158,7 @@ export default function SequenceScreen() {
   function tap(tile) {
     if (phase !== 'input' || !foreground) return;
     if (tile === expectedTile(round)) {
-      play('tap');
+      play('tap', false);
       playTone(tile);
     }
     dispatch({ type: 'press', tile });
