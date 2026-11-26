@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Brain Twist",
-    "slug": "ExpoApp",
+    "slug": "brain-twist",
+    "owner": "aryankinha",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,12 +11,16 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.aryankinha.braintwist",
       "adaptiveIcon": {
         "backgroundColor": "#222238",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,6 +42,16 @@
           "backgroundColor": "#222238"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "7cff79da-de36-4e1a-942b-6f2d1f840a21"
+      }
+    }
   }
 }

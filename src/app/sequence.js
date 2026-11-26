@@ -34,6 +34,7 @@ const twists = {
   decoy: ['Decoy', 'Ignore the flash marked ×.'],
   timed: ['Timed', 'Tap before the time bar runs out.'],
 };
+const designPreviews = __DEV__ || process.env.EXPO_PUBLIC_SEQUENCE_PREVIEWS === '1';
 const prototypeLayouts = { A: VariantA, B: VariantB, C: VariantC };
 
 function changeVariant(variant) {
@@ -44,7 +45,7 @@ const pitches = [0.75, 0.84, 0.94, 1, 1.12, 1.26, 1.33, 1.5, 1.68];
 
 export default function SequenceScreen() {
   const { difficulty: requested, variant } = useLocalSearchParams();
-  const Prototype = __DEV__ && typeof variant === 'string' && Object.hasOwn(prototypeLayouts, variant)
+  const Prototype = designPreviews && typeof variant === 'string' && Object.hasOwn(prototypeLayouts, variant)
     ? prototypeLayouts[variant] : null;
   const difficulty = readDifficulty(requested);
   const game = levelKey('sequence', difficulty);
@@ -196,7 +197,7 @@ export default function SequenceScreen() {
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <Stack.Screen options={{
         title: gameLabels[game],
-        headerRight: __DEV__ && phase === 'ready' && !Prototype ? () => (
+        headerRight: designPreviews && phase === 'ready' && !Prototype ? () => (
           <Pressable accessibilityRole="button" accessibilityLabel="Compare designs"
             onPress={() => changeVariant('A')} style={({ pressed }) => [styles.designAction, pressed && styles.designPressed]}>
             <Text style={styles.designText}>Designs</Text>

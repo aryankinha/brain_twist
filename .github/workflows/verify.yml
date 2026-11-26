@@ -25,3 +25,68 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix server
       - run: npm run check
+
+  phone-layouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      PHONE_SMOKE_URL: http://localhost:18782
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Install phone test browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/phone-test" --no-audit --no-fund playwright-core@1.65.1
+          "$RUNNER_TEMP/phone-test/node_modules/.bin/playwright-core" install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/phone-test/node_modules" >> "$GITHUB_ENV"
+      - name: Check all five games on phone and tablet viewports
+        run: |
+          npm run web -- --localhost --port 18782 > metro-phone.log 2>&1 &
+          for attempt in {1..60}; do
+            if curl -fsS "$PHONE_SMOKE_URL/status" > /dev/null; then break; fi
+            sleep 1
+          done
+          node --test .github/scripts/phone-smoke.cjs
+      - name: Print Metro log on failure
+        if: failure()
+        run: cat metro-phone.log
+
+  android-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - name: Build a fresh x86_64 Android APK
+        run: |
+          npx expo prebuild --platform android --no-install
+          cd android
+          ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Launch on compact and standard Android profiles
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash .github/scripts/android-launch.sh
